@@ -5,6 +5,7 @@ import type {
   ListingType,
   MarketplaceItem,
   MusicianProfile,
+  Post,
   User,
   Video,
 } from '@stagein/shared'
@@ -145,4 +146,69 @@ export async function getCityStats(): Promise<Record<string, number>> {
     acc[row.city] = (acc[row.city] ?? 0) + 1
     return acc
   }, {})
+}
+
+const POST_SELECT = `*, user:users(${USER_SELECT}), video:videos(*)`
+
+export async function getPosts(limit = 20, viewerId?: string): Promise<Post[]> {
+  if (!isSupabaseConfigured) return []
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('posts')
+    .select(POST_SELECT)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (error) return []
+  const posts = (data ?? []) as Post[]
+  return attachLikedByMe(posts, viewerId, supabase)
+}
+
+export async function getUserPosts(userId: string, limit = 12): Promise<Post[]> {
+  if (!isSupabaseConfigured) return []
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('posts')
+    .select(POST_SELECT)
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (error) return []
+  return (data ?? []) as Post[]
+}
+
+export async function getVideoById(id: string): Promise<Video | null> {
+  if (!isSupabaseConfigured) return null
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('videos')
+    .select('*, user:users(id, username, full_name, avatar_url, city)')
+    .eq('id', id)
+    .maybeSingle()
+  if (error) return null
+  return (data as Video) ?? null
+}
+
+export async function getViewerId(): Promise<string | null> {
+  if (!isSupabaseConfigured) return null
+  const supabase = await createClient()
+  const { data } = await supabase.auth.getUser()
+  return data.user?.id ?? null
+}
+
+async function attachLikedByMe(
+  posts: Post[],
+  viewerId: string | undefined,
+  supabase: Awaited<ReturnType<typeof createClient>>
+): Promise<Post[]> {
+  if (!viewerId || posts.length === 0) return posts
+  const { data } = await supabase
+    .from('post_likes')
+    .select('post_id')
+    .eq('user_id', viewerId)
+    .in(
+      'post_id',
+      posts.map((p) => p.id)
+    )
+  const likedIds = new Set((data ?? []).map((row) => row.post_id as string))
+  return posts.map((p) => ({ ...p, liked_by_me: likedIds.has(p.id) }))
 }
