@@ -1,4 +1,3 @@
 {
-  "root": "apps/web",
-  "buildCommand": "cd ../.. && pnpm build --filter @stagein/web"
+  "root": "apps/web"
 }
