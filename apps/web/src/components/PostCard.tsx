@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 import type { Post } from '@stagein/shared'
 import { formatRelative } from '@/lib/site'
 import { useAuthStore } from '@/stores/authStore'
-import { useTogglePostLike, useAddComment } from '@/hooks/useWall'
+import { useTogglePostLike, useAddComment, useDeletePost } from '@/hooks/useWall'
 import { getPostComments } from '@/lib/api'
 import { UserAvatar } from './UserAvatar'
 import { cn } from './ui'
@@ -23,10 +23,12 @@ export function PostCard({ post }: { post: Post }) {
   })
   const { mutate: addPostComment, isPending: isCommenting } = useAddComment()
   const [commentBody, setCommentBody] = useState('')
+  const { mutate: removePost } = useDeletePost()
+  const isOwner = userId === post.user_id
 
   return (
     <article className="rounded-2xl border border-border bg-card p-5">
-      <header className="flex items-center gap-3">
+      <header className="flex items-center justify-between gap-3">
         {author ? (
           <Link href={`/profil/${author.username}`} className="flex items-center gap-3">
             <UserAvatar name={author.full_name} username={author.username} url={author.avatar_url} size={44} />
@@ -35,6 +37,15 @@ export function PostCard({ post }: { post: Post }) {
               <span className="block text-xs text-muted">{formatRelative(post.created_at)}</span>
             </span>
           </Link>
+        ) : null}
+        {isOwner ? (
+          <button
+            type="button"
+            onClick={() => { if (window.confirm('Bu gönderiyi silmek istediğine emin misin?')) removePost(post.id) }}
+            className="text-xs font-medium text-muted hover:text-accent"
+          >
+            Sil
+          </button>
         ) : null}
       </header>
 

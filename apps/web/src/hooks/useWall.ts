@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { useAuthStore } from '@/stores/authStore'
 import { DEMO_POSTS } from '@/lib/demoContent'
-import { addComment, createPost, togglePostLike, type CreatePostInput } from '@/lib/api'
+import { addComment, createPost, deletePost, togglePostLike, type CreatePostInput } from '@/lib/api'
 
 const PAGE_SIZE = 10
 const POST_SELECT =
@@ -110,6 +110,20 @@ export function useAddComment() {
       queryClient.setQueryData<PostComment[]>(['post-comments', variables.postId], (current) =>
         current ? [...current, comment] : [comment]
       )
+    },
+  })
+}
+
+export function useDeletePost() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (postId: string) => deletePost(postId),
+    onSuccess: (_data, postId) => {
+      queryClient.setQueryData<{ pages: Post[][]; pageParams: number[] }>(['wall'], (current) => {
+        if (!current) return current
+        return { ...current, pages: current.pages.map((page) => page.filter((p) => p.id !== postId)) }
+      })
     },
   })
 }

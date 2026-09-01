@@ -112,3 +112,9 @@ export async function getPostComments(postId: string): Promise<PostComment[]> {
   if (error) throw error
   return (data ?? []) as PostComment[]
 }
+
+export async function deletePost(postId: string): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase.from('posts').delete().eq('id', postId)
+  if (error) throw error
+}
