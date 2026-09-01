@@ -36,7 +36,7 @@ export async function uploadPostPhoto(userId: string, file: File): Promise<strin
 
 const POST_SELECT = `*, user:users(${USER_SELECT}), video:videos(*)`
 
-export async function createVideoFromFile(userId: string, file: File): Promise<string> {
+export async function createVideoFromFile(userId: string, file: File): Promise<{ id: string; path: string }> {
   const supabase = createClient()
   const path = `${userId}/${Date.now()}-${file.name}`
   const { error: uploadError } = await supabase.storage.from('videos').upload(path, file)
@@ -44,7 +44,7 @@ export async function createVideoFromFile(userId: string, file: File): Promise<s
 
   const { data, error } = await supabase.from('videos').insert({ user_id: userId, storage_path: path }).select('id').single()
   if (error) throw error
-  return (data as { id: string }).id
+  return { id: (data as { id: string }).id, path }
 }
 
 export interface CreatePostInput {
@@ -57,13 +57,25 @@ export interface CreatePostInput {
 export async function createPost(input: CreatePostInput): Promise<Post> {
   const supabase = createClient()
   const photoUrls = await Promise.all(input.photoFiles.map((file) => uploadPostPhoto(input.userId, file)))
-  const videoId = input.videoFile ? await createVideoFromFile(input.userId, input.videoFile) : null
+  const video = input.videoFile ? await createVideoFromFile(input.userId, input.videoFile) : null
 
-  const { data, error } = await supabase
-    .from('posts')
-    .insert({ user_id: input.userId, body: input.body, photo_urls: photoUrls, video_id: videoId })
-    .select(POST_SELECT)
-    .single()
-  if (error) throw error
-  return { ...(data as Post), liked_by_me: false }
+  try {
+    const { data, error } = await supabase
+      .from('posts')
+      .insert({ user_id: input.userId, body: input.body, photo_urls: photoUrls, video_id: video?.id ?? null })
+      .select(POST_SELECT)
+      .single()
+    if (error) throw error
+    return { ...(data as Post), liked_by_me: false }
+  } catch (postError) {
+    if (video) {
+      try {
+        await supabase.from('videos').delete().eq('id', video.id)
+        await supabase.storage.from('videos').remove([video.path])
+      } catch {
+        // Best-effort cleanup only — surfacing the original insert error takes priority.
+      }
+    }
+    throw postError
+  }
 }
