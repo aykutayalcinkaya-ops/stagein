@@ -1,6 +1,6 @@
 'use client'
 
-import type { MusicianProfile, Post, ProfileLink, User } from '@stagein/shared'
+import type { MusicianProfile, Post, PostComment, ProfileLink, User } from '@stagein/shared'
 import { createClient } from './supabase/client'
 
 export const USER_SELECT = 'id, username, full_name, avatar_url, city, role, bio, email, created_at'
@@ -89,4 +89,26 @@ export async function togglePostLike(postId: string, userId: string, like: boole
     const { error } = await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', userId)
     if (error) throw error
   }
+}
+
+export async function addComment(postId: string, userId: string, body: string): Promise<PostComment> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('post_comments')
+    .insert({ post_id: postId, user_id: userId, body })
+    .select(`*, user:users(${USER_SELECT})`)
+    .single()
+  if (error) throw error
+  return data as PostComment
+}
+
+export async function getPostComments(postId: string): Promise<PostComment[]> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('post_comments')
+    .select(`*, user:users(${USER_SELECT})`)
+    .eq('post_id', postId)
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return (data ?? []) as PostComment[]
 }

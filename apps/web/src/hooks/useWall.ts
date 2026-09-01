@@ -1,12 +1,12 @@
 'use client'
 
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type { Post } from '@stagein/shared'
+import type { Post, PostComment } from '@stagein/shared'
 import { createClient } from '@/lib/supabase/client'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { useAuthStore } from '@/stores/authStore'
 import { DEMO_POSTS } from '@/lib/demoContent'
-import { createPost, togglePostLike, type CreatePostInput } from '@/lib/api'
+import { addComment, createPost, togglePostLike, type CreatePostInput } from '@/lib/api'
 
 const PAGE_SIZE = 10
 const POST_SELECT =
@@ -84,6 +84,26 @@ export function useTogglePostLike() {
           ...current,
           pages: current.pages.map((page) =>
             page.map((p) => (p.id === postId ? { ...p, liked_by_me: like, like_count: p.like_count + (like ? 1 : -1) } : p))
+          ),
+        }
+      })
+    },
+  })
+}
+
+export function useAddComment() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: { postId: string; userId: string; body: string }) =>
+      addComment(input.postId, input.userId, input.body),
+    onSuccess: (_comment, variables) => {
+      queryClient.setQueryData<{ pages: Post[][]; pageParams: number[] }>(['wall'], (current) => {
+        if (!current) return current
+        return {
+          ...current,
+          pages: current.pages.map((page) =>
+            page.map((p) => (p.id === variables.postId ? { ...p, comment_count: p.comment_count + 1 } : p))
           ),
         }
       })

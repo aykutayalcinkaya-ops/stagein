@@ -1,10 +1,13 @@
 'use client'
 
 import Link from 'next/link'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import type { Post } from '@stagein/shared'
 import { formatRelative } from '@/lib/site'
 import { useAuthStore } from '@/stores/authStore'
-import { useTogglePostLike } from '@/hooks/useWall'
+import { useTogglePostLike, useAddComment } from '@/hooks/useWall'
+import { getPostComments } from '@/lib/api'
 import { UserAvatar } from './UserAvatar'
 import { cn } from './ui'
 
@@ -12,6 +15,14 @@ export function PostCard({ post }: { post: Post }) {
   const author = post.user
   const userId = useAuthStore((s) => s.userId)
   const { mutate: toggleLike } = useTogglePostLike()
+  const [commentsOpen, setCommentsOpen] = useState(false)
+  const { data: comments } = useQuery({
+    queryKey: ['post-comments', post.id],
+    queryFn: () => getPostComments(post.id),
+    enabled: commentsOpen,
+  })
+  const { mutate: addPostComment, isPending: isCommenting } = useAddComment()
+  const [commentBody, setCommentBody] = useState('')
 
   return (
     <article className="rounded-2xl border border-border bg-card p-5">
@@ -84,8 +95,54 @@ export function PostCard({ post }: { post: Post }) {
             {post.like_count} beğeni
           </Link>
         )}
-        <span className="text-muted">{post.comment_count} yorum</span>
+        <button type="button" onClick={() => setCommentsOpen((v) => !v)} className="text-muted hover:text-white">
+          {post.comment_count} yorum
+        </button>
       </footer>
+
+      {commentsOpen ? (
+        <div className="mt-3 flex flex-col gap-3 border-t border-border pt-3">
+          {(comments ?? []).map((comment) => (
+            <div key={comment.id} className="flex gap-2">
+              <UserAvatar
+                name={comment.user?.full_name}
+                username={comment.user?.username}
+                url={comment.user?.avatar_url}
+                size={28}
+              />
+              <div className="rounded-lg bg-surface px-3 py-2 text-sm">
+                <span className="font-semibold text-text">{comment.user?.full_name ?? comment.user?.username}</span>{' '}
+                <span className="text-text-secondary">{comment.body}</span>
+                <div className="mt-1 text-[11px] text-muted">{formatRelative(comment.created_at)}</div>
+              </div>
+            </div>
+          ))}
+
+          {userId ? (
+            <form
+              className="flex gap-2"
+              onSubmit={(e) => {
+                e.preventDefault()
+                if (!commentBody.trim()) return
+                addPostComment(
+                  { postId: post.id, userId, body: commentBody.trim() },
+                  { onSuccess: () => setCommentBody('') }
+                )
+              }}
+            >
+              <input
+                value={commentBody}
+                onChange={(e) => setCommentBody(e.target.value)}
+                placeholder="Yorum yaz…"
+                className="flex-1 rounded-lg border border-border bg-transparent px-3 py-2 text-sm text-text outline-none placeholder:text-muted"
+              />
+              <button type="submit" disabled={isCommenting || !commentBody.trim()} className="text-sm font-semibold text-primary disabled:opacity-50">
+                Gönder
+              </button>
+            </form>
+          ) : null}
+        </div>
+      ) : null}
     </article>
   )
 }
