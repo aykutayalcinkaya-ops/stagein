@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { Link, router } from 'expo-router'
 import { signUpWithEmail } from '@stagein/supabase'
+import { authErrorMessage } from '@/lib/errors'
 import { useAuthStore } from '@/stores/authStore'
 import { colors } from '@/lib/theme'
 
@@ -40,7 +41,7 @@ export default function KayitScreen() {
       await refreshProfile()
       router.replace('/(auth)/onboarding')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Kayıt tamamlanamadı')
+      setError(authErrorMessage(err, 'Kayıt tamamlanamadı'))
     } finally {
       setPending(false)
     }

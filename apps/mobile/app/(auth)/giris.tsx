@@ -14,6 +14,7 @@ import * as AppleAuthentication from 'expo-apple-authentication'
 import { Ionicons } from '@expo/vector-icons'
 import { Link, router } from 'expo-router'
 import { signInWithEmail } from '@stagein/supabase'
+import { authErrorMessage } from '@/lib/errors'
 import { useAuthStore } from '@/stores/authStore'
 import { signInWithApple, signInWithGoogleNative } from '@/lib/oauth'
 import { colors } from '@/lib/theme'
@@ -40,7 +41,7 @@ export default function GirisScreen() {
       await refreshProfile()
       router.replace('/')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Giriş yapılamadı')
+      setError(authErrorMessage(err, 'Giriş yapılamadı'))
     } finally {
       setPending(null)
     }
