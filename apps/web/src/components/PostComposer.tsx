@@ -11,15 +11,16 @@ export function PostComposer() {
   const { mutate, isPending } = useCreatePost()
   const [body, setBody] = useState('')
   const [photoFiles, setPhotoFiles] = useState<File[]>([])
+  const [videoFile, setVideoFile] = useState<File | null>(null)
 
   if (!profile) return null
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    if (!body.trim() && photoFiles.length === 0) return
+    if (!body.trim() && photoFiles.length === 0 && !videoFile) return
     mutate(
-      { userId: profile!.id, body: body.trim() || null, photoFiles },
-      { onSuccess: () => { setBody(''); setPhotoFiles([]) } }
+      { userId: profile!.id, body: body.trim() || null, photoFiles, videoFile },
+      { onSuccess: () => { setBody(''); setPhotoFiles([]); setVideoFile(null) } }
     )
   }
 
@@ -54,18 +55,42 @@ export function PostComposer() {
         </div>
       ) : null}
 
+      {videoFile ? (
+        <div className="relative mt-3 h-28 w-full overflow-hidden rounded-lg border border-border bg-black">
+          <video src={URL.createObjectURL(videoFile)} className="h-full w-full object-contain" muted />
+          <button
+            type="button"
+            onClick={() => setVideoFile(null)}
+            className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-xs text-white"
+          >
+            ×
+          </button>
+        </div>
+      ) : null}
+
       <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
-        <label className="cursor-pointer text-sm font-medium text-text-secondary hover:text-white">
-          📷 Fotoğraf
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            className="hidden"
-            onChange={(e) => setPhotoFiles((files) => [...files, ...Array.from(e.target.files ?? [])])}
-          />
-        </label>
-        <Button type="submit" disabled={isPending || (!body.trim() && photoFiles.length === 0)}>
+        <div className="flex items-center gap-4">
+          <label className="cursor-pointer text-sm font-medium text-text-secondary hover:text-white">
+            📷 Fotoğraf
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={(e) => setPhotoFiles((files) => [...files, ...Array.from(e.target.files ?? [])])}
+            />
+          </label>
+          <label className="cursor-pointer text-sm font-medium text-text-secondary hover:text-white">
+            🎬 Video
+            <input
+              type="file"
+              accept="video/*"
+              className="hidden"
+              onChange={(e) => setVideoFile(e.target.files?.[0] ?? null)}
+            />
+          </label>
+        </div>
+        <Button type="submit" disabled={isPending || (!body.trim() && photoFiles.length === 0 && !videoFile)}>
           {isPending ? 'Paylaşılıyor…' : 'Paylaş'}
         </Button>
       </div>

@@ -36,19 +36,32 @@ export async function uploadPostPhoto(userId: string, file: File): Promise<strin
 
 const POST_SELECT = `*, user:users(${USER_SELECT}), video:videos(*)`
 
+export async function createVideoFromFile(userId: string, file: File): Promise<string> {
+  const supabase = createClient()
+  const path = `${userId}/${Date.now()}-${file.name}`
+  const { error: uploadError } = await supabase.storage.from('videos').upload(path, file)
+  if (uploadError) throw uploadError
+
+  const { data, error } = await supabase.from('videos').insert({ user_id: userId, storage_path: path }).select('id').single()
+  if (error) throw error
+  return (data as { id: string }).id
+}
+
 export interface CreatePostInput {
   userId: string
   body: string | null
   photoFiles: File[]
+  videoFile: File | null
 }
 
 export async function createPost(input: CreatePostInput): Promise<Post> {
   const supabase = createClient()
   const photoUrls = await Promise.all(input.photoFiles.map((file) => uploadPostPhoto(input.userId, file)))
+  const videoId = input.videoFile ? await createVideoFromFile(input.userId, input.videoFile) : null
 
   const { data, error } = await supabase
     .from('posts')
-    .insert({ user_id: input.userId, body: input.body, photo_urls: photoUrls })
+    .insert({ user_id: input.userId, body: input.body, photo_urls: photoUrls, video_id: videoId })
     .select(POST_SELECT)
     .single()
   if (error) throw error

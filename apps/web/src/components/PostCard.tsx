@@ -39,6 +39,23 @@ export function PostCard({ post }: { post: Post }) {
         </div>
       ) : null}
 
+      {post.video ? (
+        <Link
+          href={`/kesfet?v=${post.video.id}`}
+          className="relative mt-4 flex aspect-video w-full items-center justify-center overflow-hidden rounded-xl bg-black"
+        >
+          {post.video.thumbnail_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={post.video.thumbnail_url} alt="" className="absolute inset-0 h-full w-full object-cover opacity-70" />
+          ) : null}
+          <span className="relative flex h-14 w-14 items-center justify-center rounded-full bg-white/90 text-dark">
+            <svg viewBox="0 0 24 24" fill="currentColor" className="ml-1 h-6 w-6">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </span>
+        </Link>
+      ) : null}
+
       <footer className="mt-4 flex items-center gap-5 border-t border-border pt-3 text-sm text-muted">
         <span>{post.like_count} beğeni</span>
         <span>{post.comment_count} yorum</span>
