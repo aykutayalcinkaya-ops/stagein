@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 import type { Post } from '@stagein/shared'
 import { useWall } from '@/hooks/useWall'
 import { PostCard } from './PostCard'
+import { PostComposer } from './PostComposer'
 import { EmptyState } from './ui'
 
 export function Wall({ initialPosts }: { initialPosts: Post[] }) {
@@ -26,6 +27,7 @@ export function Wall({ initialPosts }: { initialPosts: Post[] }) {
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-8">
+      <PostComposer />
       {isLoading ? (
         <p className="py-16 text-center text-sm text-muted">Duvar yükleniyor…</p>
       ) : isError ? (

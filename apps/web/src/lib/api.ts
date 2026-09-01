@@ -1,6 +1,6 @@
 'use client'
 
-import type { MusicianProfile, ProfileLink, User } from '@stagein/shared'
+import type { MusicianProfile, Post, ProfileLink, User } from '@stagein/shared'
 import { createClient } from './supabase/client'
 
 export const USER_SELECT = 'id, username, full_name, avatar_url, city, role, bio, email, created_at'
@@ -24,4 +24,33 @@ export async function fetchProfileBundle(userId: string): Promise<ProfileBundle>
     musicianProfile: (musicianProfile as MusicianProfile) ?? null,
     profileLinks: (profileLinks as ProfileLink[]) ?? [],
   }
+}
+
+export async function uploadPostPhoto(userId: string, file: File): Promise<string> {
+  const supabase = createClient()
+  const path = `${userId}/${Date.now()}-${file.name}`
+  const { error } = await supabase.storage.from('post-photos').upload(path, file)
+  if (error) throw error
+  return supabase.storage.from('post-photos').getPublicUrl(path).data.publicUrl
+}
+
+const POST_SELECT = `*, user:users(${USER_SELECT}), video:videos(*)`
+
+export interface CreatePostInput {
+  userId: string
+  body: string | null
+  photoFiles: File[]
+}
+
+export async function createPost(input: CreatePostInput): Promise<Post> {
+  const supabase = createClient()
+  const photoUrls = await Promise.all(input.photoFiles.map((file) => uploadPostPhoto(input.userId, file)))
+
+  const { data, error } = await supabase
+    .from('posts')
+    .insert({ user_id: input.userId, body: input.body, photo_urls: photoUrls })
+    .select(POST_SELECT)
+    .single()
+  if (error) throw error
+  return { ...(data as Post), liked_by_me: false }
 }

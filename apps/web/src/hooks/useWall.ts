@@ -1,11 +1,12 @@
 'use client'
 
-import { useInfiniteQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { Post } from '@stagein/shared'
 import { createClient } from '@/lib/supabase/client'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { useAuthStore } from '@/stores/authStore'
 import { DEMO_POSTS } from '@/lib/demoContent'
+import { createPost, type CreatePostInput } from '@/lib/api'
 
 const PAGE_SIZE = 10
 const POST_SELECT =
@@ -50,5 +51,19 @@ export function useWall(initialPosts: Post[] = []) {
     },
     getNextPageParam: (lastPage, allPages) =>
       lastPage.length < PAGE_SIZE ? undefined : allPages.reduce((sum, p) => sum + p.length, 0),
+  })
+}
+
+export function useCreatePost() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: CreatePostInput) => createPost(input),
+    onSuccess: (post) => {
+      queryClient.setQueryData<{ pages: Post[][]; pageParams: number[] }>(['wall'], (current) => {
+        if (!current) return { pages: [[post]], pageParams: [0] }
+        return { ...current, pages: [[post, ...current.pages[0]], ...current.pages.slice(1)] }
+      })
+    },
   })
 }
