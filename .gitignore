@@ -44,6 +44,5 @@ web-build/
 # Misc
 *.log
 *.pyc
-pnpm-lock.yaml
 
 .vercel
