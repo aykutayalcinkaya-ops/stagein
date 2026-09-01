@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+@theme {
+  --color-dark: #0A0A0A;
+  --color-surface: #141414;
+  --color-card: #1A1A1A;
+  --color-border: #2A2A2A;
+  --color-muted: #666666;
+  --color-primary: #6C47FF;
+  --color-accent: #FF6B35;
+  --color-text: #FFFFFF;
+  --color-text-secondary: #CCCCCC;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --default-transition-duration: 150ms;
+  --default-transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-dark);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background-color: var(--color-primary);
+  color: #fff;
+}
+
+/* Koyu zemine oturan ince scrollbar */
+* {
+  scrollbar-color: var(--color-border) transparent;
+  scrollbar-width: thin;
+}

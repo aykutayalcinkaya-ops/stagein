@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "StageIn",
+    "slug": "stagein",
+    "version": "0.1.0",
+    "scheme": "stagein",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "backgroundColor": "#0A0A0A",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.stagein.app",
+      "usesAppleSignIn": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Sahne videonu kaydetmek icin kameraya erisim gerekiyor.",
+        "NSMicrophoneUsageDescription": "Video ve sesli not kaydi icin mikrofona erisim gerekiyor.",
+        "NSPhotoLibraryUsageDescription": "Galeriden video ve fotograf secmek icin erisim gerekiyor."
+      }
+    },
+    "android": {
+      "package": "com.stagein.app",
+      "edgeToEdgeEnabled": true,
+      "permissions": ["CAMERA", "RECORD_AUDIO", "READ_MEDIA_VIDEO", "READ_MEDIA_IMAGES"]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-video",
+      "expo-apple-authentication",
+      ["expo-camera", { "cameraPermission": "Sahne videonu kaydetmek icin kameraya erisim gerekiyor.", "microphonePermission": "Video kaydi icin mikrofona erisim gerekiyor." }],
+      ["expo-image-picker", { "photosPermission": "Galeriden video ve fotograf secmek icin erisim gerekiyor." }],
+      ["expo-av", { "microphonePermission": "Sesli not kaydi icin mikrofona erisim gerekiyor." }]
+    ],
+    "experiments": { "typedRoutes": true }
+  }
+}
