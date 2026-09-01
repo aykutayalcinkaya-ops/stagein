@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { useAuthStore } from '@/stores/authStore'
 import { DEMO_POSTS } from '@/lib/demoContent'
-import { createPost, type CreatePostInput } from '@/lib/api'
+import { createPost, togglePostLike, type CreatePostInput } from '@/lib/api'
 
 const PAGE_SIZE = 10
 const POST_SELECT =
@@ -63,6 +63,29 @@ export function useCreatePost() {
       queryClient.setQueryData<{ pages: Post[][]; pageParams: number[] }>(['wall'], (current) => {
         if (!current) return { pages: [[post]], pageParams: [0] }
         return { ...current, pages: [[post, ...current.pages[0]], ...current.pages.slice(1)] }
+      })
+    },
+  })
+}
+
+export function useTogglePostLike() {
+  const queryClient = useQueryClient()
+  const userId = useAuthStore((s) => s.userId)
+
+  return useMutation({
+    mutationFn: async ({ postId, like }: { postId: string; like: boolean }) => {
+      if (!userId) throw new Error('Giriş yapmalısın')
+      await togglePostLike(postId, userId, like)
+    },
+    onMutate: async ({ postId, like }) => {
+      queryClient.setQueryData<{ pages: Post[][]; pageParams: number[] }>(['wall'], (current) => {
+        if (!current) return current
+        return {
+          ...current,
+          pages: current.pages.map((page) =>
+            page.map((p) => (p.id === postId ? { ...p, liked_by_me: like, like_count: p.like_count + (like ? 1 : -1) } : p))
+          ),
+        }
       })
     },
   })

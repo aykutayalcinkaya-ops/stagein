@@ -3,10 +3,15 @@
 import Link from 'next/link'
 import type { Post } from '@stagein/shared'
 import { formatRelative } from '@/lib/site'
+import { useAuthStore } from '@/stores/authStore'
+import { useTogglePostLike } from '@/hooks/useWall'
 import { UserAvatar } from './UserAvatar'
+import { cn } from './ui'
 
 export function PostCard({ post }: { post: Post }) {
   const author = post.user
+  const userId = useAuthStore((s) => s.userId)
+  const { mutate: toggleLike } = useTogglePostLike()
 
   return (
     <article className="rounded-2xl border border-border bg-card p-5">
@@ -56,9 +61,30 @@ export function PostCard({ post }: { post: Post }) {
         </Link>
       ) : null}
 
-      <footer className="mt-4 flex items-center gap-5 border-t border-border pt-3 text-sm text-muted">
-        <span>{post.like_count} beğeni</span>
-        <span>{post.comment_count} yorum</span>
+      <footer className="mt-4 flex items-center gap-5 border-t border-border pt-3 text-sm">
+        {userId ? (
+          <button
+            type="button"
+            onClick={() => toggleLike({ postId: post.id, like: !post.liked_by_me })}
+            className={cn('flex items-center gap-1.5 font-medium', post.liked_by_me ? 'text-accent' : 'text-muted hover:text-white')}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill={post.liked_by_me ? 'currentColor' : 'none'}
+              stroke="currentColor"
+              strokeWidth={post.liked_by_me ? 0 : 1.8}
+              className="h-4 w-4"
+            >
+              <path d="M12 21s-6.7-4.3-9.3-8.1C.8 10 1.4 6.4 4.4 4.8c2.1-1.1 4.6-.6 6.1 1.2.4.5.7.9 1.5.9.8 0 1.1-.4 1.5-.9 1.5-1.8 4-2.3 6.1-1.2 3 1.6 3.6 5.2 1.7 8.1C18.7 16.7 12 21 12 21Z" />
+            </svg>
+            {post.like_count} beğeni
+          </button>
+        ) : (
+          <Link href="/giris" className="flex items-center gap-1.5 text-muted hover:text-white">
+            {post.like_count} beğeni
+          </Link>
+        )}
+        <span className="text-muted">{post.comment_count} yorum</span>
       </footer>
     </article>
   )

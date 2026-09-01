@@ -79,3 +79,14 @@ export async function createPost(input: CreatePostInput): Promise<Post> {
     throw postError
   }
 }
+
+export async function togglePostLike(postId: string, userId: string, like: boolean): Promise<void> {
+  const supabase = createClient()
+  if (like) {
+    const { error } = await supabase.from('post_likes').insert({ post_id: postId, user_id: userId })
+    if (error) throw error
+  } else {
+    const { error } = await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', userId)
+    if (error) throw error
+  }
+}
