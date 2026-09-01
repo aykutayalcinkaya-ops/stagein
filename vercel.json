@@ -1,0 +1,4 @@
+{
+  "buildCommand": "pnpm build --filter @stagein/web",
+  "outputDirectory": "apps/web/.next"
+}
