@@ -13,10 +13,6 @@ build/
 out/
 
 # Env
-.env
-.env.local
-.env.*.local
-.env.production.local
 
 # IDE
 .vscode/
@@ -49,3 +45,5 @@ web-build/
 *.log
 *.pyc
 pnpm-lock.yaml
+
+.vercel
