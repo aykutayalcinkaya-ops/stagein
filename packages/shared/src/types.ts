@@ -124,3 +124,34 @@ export interface BadgeApplication {
   reviewed_by: string | null
   created_at: string
 }
+
+export interface Post {
+  id: string
+  user_id: string
+  body: string | null
+  video_id: string | null
+  photo_urls: string[]
+  like_count: number
+  comment_count: number
+  created_at: string
+  user?: User
+  video?: Video
+  liked_by_me?: boolean
+}
+
+export interface PostComment {
+  id: string
+  post_id: string
+  user_id: string
+  body: string
+  created_at: string
+  user?: User
+}
+
+export interface ProfileLink {
+  id: string
+  user_id: string
+  label: string
+  url: string
+  position: number
+}
