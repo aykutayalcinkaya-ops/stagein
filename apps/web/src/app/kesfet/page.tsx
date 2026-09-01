@@ -7,6 +7,11 @@ export const metadata: Metadata = {
   robots: { index: false },
 }
 
-export default function KesfetPage() {
-  return <VideoFeed />
+interface PageProps {
+  searchParams: Promise<{ v?: string }>
+}
+
+export default async function KesfetPage({ searchParams }: PageProps) {
+  const { v } = await searchParams
+  return <VideoFeed startVideoId={v} />
 }
