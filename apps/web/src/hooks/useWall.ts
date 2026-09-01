@@ -97,7 +97,7 @@ export function useAddComment() {
   return useMutation({
     mutationFn: (input: { postId: string; userId: string; body: string }) =>
       addComment(input.postId, input.userId, input.body),
-    onSuccess: (_comment, variables) => {
+    onSuccess: (comment, variables) => {
       queryClient.setQueryData<{ pages: Post[][]; pageParams: number[] }>(['wall'], (current) => {
         if (!current) return current
         return {
@@ -107,6 +107,9 @@ export function useAddComment() {
           ),
         }
       })
+      queryClient.setQueryData<PostComment[]>(['post-comments', variables.postId], (current) =>
+        current ? [...current, comment] : [comment]
+      )
     },
   })
 }
