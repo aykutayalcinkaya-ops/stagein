@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Env
+.env
+.env.local
+.env.*.local
+.env.production.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Expo / Mobile
+.expo/
+.expo-shared/
+dist/
+npm-debug.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+
+# Supabase local
+.supabase/
+
+# Misc
+*.log
+*.pyc
+pnpm-lock.yaml
