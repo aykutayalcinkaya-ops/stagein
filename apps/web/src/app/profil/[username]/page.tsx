@@ -1,9 +1,20 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Chip, EmptyState, LinkButton } from '@/components/ui'
+import { Chip, EmptyState } from '@/components/ui'
 import { UserAvatar } from '@/components/UserAvatar'
-import { getEndorsements, getMusicianProfile, getUserByUsername, getUserListings, getUserVideos } from '@/lib/data'
+import { ProfileHeaderActions } from '@/components/ProfileHeaderActions'
+import { ProfileLinkList } from '@/components/ProfileLinkList'
+import { PostCard } from '@/components/PostCard'
+import {
+  getEndorsements,
+  getMusicianProfile,
+  getProfileLinks,
+  getUserByUsername,
+  getUserListings,
+  getUserPosts,
+  getUserVideos,
+} from '@/lib/data'
 import { EXPERIENCE_LABELS, LISTING_TYPE_LABELS, SITE_URL, formatDate } from '@/lib/site'
 
 interface PageProps {
@@ -45,11 +56,13 @@ export default async function ProfilPage({ params }: PageProps) {
 
   if (!user) notFound()
 
-  const [profile, videos, listings, endorsements] = await Promise.all([
+  const [profile, videos, listings, endorsements, links, posts] = await Promise.all([
     getMusicianProfile(user.id),
     getUserVideos(user.id),
     getUserListings(user.id),
     getEndorsements(user.id),
+    getProfileLinks(user.id),
+    getUserPosts(user.id),
   ])
 
   const jsonLd = {
@@ -84,8 +97,10 @@ export default async function ProfilPage({ params }: PageProps) {
           </div>
         </div>
 
-        <LinkButton href="/#indir">Mesaj at</LinkButton>
+        <ProfileHeaderActions username={user.username} />
       </header>
+
+      <ProfileLinkList links={links} />
 
       {user.bio ? <p className="mt-8 max-w-2xl text-lg leading-relaxed text-text-secondary">{user.bio}</p> : null}
 
@@ -137,6 +152,21 @@ export default async function ProfilPage({ params }: PageProps) {
                   <span>{video.like_count} beğeni</span>
                 </div>
               </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="mt-14">
+        <h2 className="text-2xl font-bold tracking-tight">Gönderiler</h2>
+        {posts.length === 0 ? (
+          <div className="mt-6">
+            <EmptyState title="Henüz gönderi yok" description="Bu müzisyen henüz duvarda paylaşım yapmamış." />
+          </div>
+        ) : (
+          <div className="mt-6 flex flex-col gap-4">
+            {posts.map((post) => (
+              <PostCard key={post.id} post={post} />
             ))}
           </div>
         )}

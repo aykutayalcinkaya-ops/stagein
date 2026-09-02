@@ -6,6 +6,7 @@ import type {
   MarketplaceItem,
   MusicianProfile,
   Post,
+  ProfileLink,
   User,
   Video,
 } from '@stagein/shared'
@@ -193,6 +194,18 @@ export async function getViewerId(): Promise<string | null> {
   const supabase = await createClient()
   const { data } = await supabase.auth.getUser()
   return data.user?.id ?? null
+}
+
+export async function getProfileLinks(userId: string): Promise<ProfileLink[]> {
+  if (!isSupabaseConfigured) return []
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('profile_links')
+    .select('*')
+    .eq('user_id', userId)
+    .order('position', { ascending: true })
+  if (error) return []
+  return (data ?? []) as ProfileLink[]
 }
 
 async function attachLikedByMe(
