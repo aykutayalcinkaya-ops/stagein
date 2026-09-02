@@ -16,14 +16,15 @@ const LEVELS: ExperienceLevel[] = ['beginner', 'intermediate', 'professional']
 export default function AyarlarPage() {
   const router = useRouter()
   const userId = useAuthStore((s) => s.userId)
+  const isLoading = useAuthStore((s) => s.isLoading)
   const profile = useAuthStore((s) => s.profile)
   const musicianProfile = useAuthStore((s) => s.musicianProfile)
   const setProfileData = useAuthStore((s) => s.setProfileData)
   const profileLinks = useAuthStore((s) => s.profileLinks)
 
   useEffect(() => {
-    if (userId === null) router.replace('/giris')
-  }, [userId, router])
+    if (!isLoading && userId === null) router.replace('/giris')
+  }, [isLoading, userId, router])
 
   const [fullName, setFullName] = useState(profile?.full_name ?? '')
   const [bio, setBio] = useState(profile?.bio ?? '')
