@@ -1,4 +1,6 @@
-import * as FileSystem from 'expo-file-system'
+// createUploadTask (ilerleme bildirimli yukleme) SDK 54'te legacy API'de kaldi;
+// yeni File/Directory API'sinde ilerleme geri cagirimi yok.
+import * as FileSystem from 'expo-file-system/legacy'
 import { supabase } from '@stagein/supabase'
 import type {
   Conversation,

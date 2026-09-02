@@ -6,11 +6,15 @@ export function MarketplaceCard({ item }: { item: MarketplaceItem }) {
   const cover = item.photos?.[0]
 
   return (
-    <article className="overflow-hidden rounded-xl border border-border bg-card">
-      <div className="aspect-[4/3] w-full bg-surface">
+    <article className="group overflow-hidden rounded-2xl border border-white/[0.06] bg-card/60 transition-all duration-180 hover:-translate-y-1 hover:border-accent/40">
+      <div className="aspect-[4/3] w-full overflow-hidden bg-surface">
         {cover ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={cover} alt={item.title} className="h-full w-full object-cover" />
+          <img
+            src={cover}
+            alt={item.title}
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-xs text-muted">Görsel yok</div>
         )}

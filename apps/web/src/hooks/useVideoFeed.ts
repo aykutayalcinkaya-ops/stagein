@@ -1,10 +1,12 @@
 'use client'
 
-import { useInfiniteQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { Video } from '@stagein/shared'
 import { createClient } from '@/lib/supabase/client'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
+import { toggleVideoLike } from '@/lib/api'
 import { DEMO_VIDEOS } from '@/lib/demoContent'
+import { useAuthStore } from '@/stores/authStore'
 
 const PAGE_SIZE = 10
 
@@ -57,5 +59,32 @@ export function useVideoFeed(city?: string, startVideoId?: string) {
     },
     getNextPageParam: (lastPage, allPages) =>
       lastPage.length < PAGE_SIZE ? undefined : allPages.reduce((sum, p) => sum + p.length, 0),
+  })
+}
+
+export function useToggleVideoLike() {
+  const queryClient = useQueryClient()
+  const userId = useAuthStore((s) => s.userId)
+
+  return useMutation({
+    mutationFn: async ({ videoId, like }: { videoId: string; like: boolean }) => {
+      if (!userId) throw new Error('Login required')
+      await toggleVideoLike(videoId, userId, like)
+    },
+    onMutate: async ({ videoId, like }) => {
+      queryClient.setQueryData<{ pages: Video[][]; pageParams: number[] }>(['feed'], (current) => {
+        if (!current) return current
+        return {
+          ...current,
+          pages: current.pages.map((page) =>
+            page.map((v) =>
+              v.id === videoId
+                ? { ...v, liked_by_me: like, like_count: Math.max(0, (v.like_count ?? 0) + (like ? 1 : -1)) }
+                : v
+            )
+          ),
+        }
+      })
+    },
   })
 }

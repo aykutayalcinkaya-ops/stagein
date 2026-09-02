@@ -11,6 +11,8 @@ dist/
 build/
 .next/
 out/
+apps/web/public/sitemap*.xml
+apps/web/public/robots.txt
 
 # Env
 
@@ -40,6 +42,7 @@ web-build/
 
 # Supabase local
 .supabase/
+supabase/supabase/
 
 # Misc
 *.log

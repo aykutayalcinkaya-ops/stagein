@@ -10,7 +10,7 @@ export function ListingCard({ listing }: { listing: Listing }) {
   return (
     <Link
       href={`/ilanlar/${listing.id}`}
-      className="group block rounded-xl border border-border bg-card p-5 transition-colors duration-150 ease-out hover:border-primary"
+      className="group block rounded-2xl border border-white/[0.06] bg-card/60 p-5 transition-all duration-180 ease-out hover:-translate-y-1 hover:border-primary/40"
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex flex-wrap items-center gap-2">

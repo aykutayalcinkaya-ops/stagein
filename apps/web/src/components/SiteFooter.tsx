@@ -1,4 +1,7 @@
+'use client'
+
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 
 const COLUMNS = [
   {
@@ -13,7 +16,6 @@ const COLUMNS = [
     title: 'Kurumsal',
     links: [
       { href: '/hakkimizda', label: 'Hakkımızda' },
-      { href: '/blog', label: 'Blog' },
       { href: '/iletisim', label: 'İletişim' },
     ],
   },
@@ -33,12 +35,15 @@ const SOCIAL = [
 ]
 
 export function SiteFooter() {
+  const pathname = usePathname()
+  if (pathname.startsWith('/kesfet')) return null
+
   return (
-    <footer className="border-t border-border bg-dark">
+    <footer className="border-t border-white/[0.06] bg-dark">
       <div className="mx-auto max-w-6xl px-4 py-14">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div>
-            <p className="text-lg font-black tracking-tight">
+            <p className="font-display text-xl uppercase tracking-wide">
               Stage<span className="text-primary">In</span>
             </p>
             <p className="mt-3 max-w-xs text-sm text-muted">
@@ -48,11 +53,11 @@ export function SiteFooter() {
 
           {COLUMNS.map((col) => (
             <div key={col.title}>
-              <p className="text-sm font-semibold text-white">{col.title}</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted">{col.title}</p>
               <ul className="mt-4 flex flex-col gap-3">
                 {col.links.map((link) => (
                   <li key={link.href}>
-                    <Link href={link.href} className="text-sm text-text-secondary transition-colors duration-150 hover:text-white">
+                    <Link href={link.href} className="text-sm text-text-secondary transition-colors duration-180 hover:text-white">
                       {link.label}
                     </Link>
                   </li>
@@ -62,7 +67,7 @@ export function SiteFooter() {
           ))}
         </div>
 
-        <div className="mt-12 flex flex-col gap-4 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-12 flex flex-col gap-4 border-t border-white/[0.06] pt-6 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-muted">© {new Date().getFullYear()} StageIn. Tüm hakları saklıdır.</p>
           <ul className="flex gap-5">
             {SOCIAL.map((s) => (

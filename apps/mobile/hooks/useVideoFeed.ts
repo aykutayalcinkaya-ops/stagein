@@ -6,6 +6,9 @@ import { useAuthStore } from '@/stores/authStore'
 import { useFeedStore } from '@/stores/feedStore'
 
 const PAGE_SIZE = 10
+// Selector'dan her render'da yeni dizi donmemeli: useSyncExternalStore
+// snapshot'i degisti sanip sonsuz render dongusune giriyor.
+const NO_INSTRUMENTS: string[] = []
 
 /**
  * Sıralama (fikirson.md): önce kullanıcının şehri, sonra aynı enstrüman,
@@ -23,7 +26,7 @@ function rank(videos: Video[], instruments: string[]) {
 
 export function useVideoFeed() {
   const profileCity = useAuthStore((s) => s.profile?.city ?? null)
-  const instruments = useAuthStore((s) => s.musicianProfile?.instruments ?? [])
+  const instruments = useAuthStore((s) => s.musicianProfile?.instruments) ?? NO_INSTRUMENTS
   const cityFilter = useFeedStore((s) => s.cityFilter)
   const city = cityFilter ?? profileCity ?? undefined
 

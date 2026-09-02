@@ -42,6 +42,7 @@ export interface Video {
   view_count: number
   created_at: string
   user?: User
+  liked_by_me?: boolean
 }
 
 export interface Listing {

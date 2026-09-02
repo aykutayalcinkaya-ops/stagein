@@ -21,16 +21,40 @@
     "android": {
       "package": "com.stagein.app",
       "edgeToEdgeEnabled": true,
-      "permissions": ["CAMERA", "RECORD_AUDIO", "READ_MEDIA_VIDEO", "READ_MEDIA_IMAGES"]
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "READ_MEDIA_VIDEO",
+        "READ_MEDIA_IMAGES"
+      ]
     },
     "plugins": [
       "expo-router",
       "expo-video",
       "expo-apple-authentication",
-      ["expo-camera", { "cameraPermission": "Sahne videonu kaydetmek icin kameraya erisim gerekiyor.", "microphonePermission": "Video kaydi icin mikrofona erisim gerekiyor." }],
-      ["expo-image-picker", { "photosPermission": "Galeriden video ve fotograf secmek icin erisim gerekiyor." }],
-      ["expo-av", { "microphonePermission": "Sesli not kaydi icin mikrofona erisim gerekiyor." }]
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Sahne videonu kaydetmek icin kameraya erisim gerekiyor.",
+          "microphonePermission": "Video kaydi icin mikrofona erisim gerekiyor."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Galeriden video ve fotograf secmek icin erisim gerekiyor."
+        }
+      ],
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Sesli not kaydi icin mikrofona erisim gerekiyor."
+        }
+      ],
+      "expo-web-browser"
     ],
-    "experiments": { "typedRoutes": true }
+    "experiments": {
+      "typedRoutes": true
+    }
   }
 }

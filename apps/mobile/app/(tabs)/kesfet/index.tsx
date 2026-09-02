@@ -97,7 +97,6 @@ export default function KesfetScreen() {
         <FlashList
           data={videos}
           keyExtractor={(item) => item.id}
-          estimatedItemSize={itemHeight}
           pagingEnabled
           snapToInterval={itemHeight}
           decelerationRate="fast"

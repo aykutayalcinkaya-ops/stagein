@@ -118,3 +118,14 @@ export async function deletePost(postId: string): Promise<void> {
   const { error } = await supabase.from('posts').delete().eq('id', postId)
   if (error) throw error
 }
+
+export async function toggleVideoLike(videoId: string, userId: string, like: boolean): Promise<void> {
+  const supabase = createClient()
+  if (like) {
+    const { error } = await supabase.from('video_likes').insert({ video_id: videoId, user_id: userId })
+    if (error) throw error
+  } else {
+    const { error } = await supabase.from('video_likes').delete().eq('video_id', videoId).eq('user_id', userId)
+    if (error) throw error
+  }
+}
