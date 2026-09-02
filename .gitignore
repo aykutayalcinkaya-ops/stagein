@@ -11,6 +11,7 @@ dist/
 build/
 .next/
 out/
+.turbo/
 apps/web/public/sitemap*.xml
 apps/web/public/robots.txt
 
