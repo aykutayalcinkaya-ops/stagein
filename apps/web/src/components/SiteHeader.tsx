@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import { useAuthStore } from '@/stores/authStore'
+import { UserAvatar } from './UserAvatar'
 import { cn } from './ui'
 
 const NAV = [
@@ -15,6 +16,7 @@ const NAV = [
 export function SiteHeader() {
   const pathname = usePathname()
   const userId = useAuthStore((s) => s.userId)
+  const profile = useAuthStore((s) => s.profile)
   const [open, setOpen] = useState(false)
 
   /** Keşfet tam ekran/immersive akış — kendi üst çubuğunu taşıyor. */
@@ -49,12 +51,30 @@ export function SiteHeader() {
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
-          <Link
-            href={userId ? '/kesfet' : '/giris'}
-            className="rounded-full bg-primary px-5 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_-8px_var(--color-primary)] transition-all duration-180 ease-out hover:bg-primary-dim active:scale-[0.97]"
-          >
-            {userId ? 'Uygulamaya Git' : 'Giriş Yap'}
-          </Link>
+          {profile ? (
+            <>
+              <Link href={`/profil/${profile.username}`} aria-label="Profilim">
+                <UserAvatar name={profile.full_name} username={profile.username} url={profile.avatar_url} size={36} />
+              </Link>
+              <Link
+                href="/ayarlar"
+                aria-label="Ayarlar"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.03] text-text-secondary hover:text-white"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-4 w-4">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+                </svg>
+              </Link>
+            </>
+          ) : (
+            <Link
+              href="/giris"
+              className="rounded-full bg-primary px-5 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_-8px_var(--color-primary)] transition-all duration-180 ease-out hover:bg-primary-dim active:scale-[0.97]"
+            >
+              Giriş Yap
+            </Link>
+          )}
         </div>
 
         <button
