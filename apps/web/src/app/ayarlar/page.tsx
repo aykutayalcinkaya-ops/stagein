@@ -41,6 +41,21 @@ export default function AyarlarPage() {
   const [newLabel, setNewLabel] = useState('')
   const [newUrl, setNewUrl] = useState('')
 
+  // Profile data loads asynchronously (AuthSync's fetchProfileBundle), so the useState
+  // initializers above run before it arrives on first mount. Sync the form once it's in.
+  useEffect(() => {
+    if (!profile) return
+    setFullName(profile.full_name ?? '')
+    setBio(profile.bio ?? '')
+    setCity(profile.city ?? null)
+    setInstruments(musicianProfile?.instruments ?? [])
+    setGenres(musicianProfile?.genres ?? [])
+    setExperience(musicianProfile?.experience_level ?? 'beginner')
+    setOpenToGig(musicianProfile?.is_open_to_gig ?? true)
+    setLinks(profileLinks.map((l) => ({ label: l.label, url: l.url })))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id])
+
   function toggle(list: string[], setList: (next: string[]) => void, value: string) {
     setList(list.includes(value) ? list.filter((v) => v !== value) : [...list, value])
   }
