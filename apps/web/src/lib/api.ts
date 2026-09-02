@@ -1,6 +1,6 @@
 'use client'
 
-import type { MusicianProfile, Post, PostComment, ProfileLink, User } from '@stagein/shared'
+import type { ExperienceLevel, MusicianProfile, Post, PostComment, ProfileLink, User } from '@stagein/shared'
 import { createClient } from './supabase/client'
 
 export const USER_SELECT = 'id, username, full_name, avatar_url, city, role, bio, email, created_at'
@@ -128,4 +128,36 @@ export async function toggleVideoLike(videoId: string, userId: string, like: boo
     const { error } = await supabase.from('video_likes').delete().eq('video_id', videoId).eq('user_id', userId)
     if (error) throw error
   }
+}
+
+export async function uploadAvatar(userId: string, file: File): Promise<string> {
+  const supabase = createClient()
+  const path = `${userId}/${Date.now()}-${file.name}`
+  const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
+  if (error) throw error
+  return supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl
+}
+
+export async function upsertUser(input: {
+  id: string
+  full_name: string | null
+  bio: string | null
+  city: string | null
+  avatar_url: string | null
+}): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase.from('users').update(input).eq('id', input.id)
+  if (error) throw error
+}
+
+export async function upsertMusicianProfile(input: {
+  user_id: string
+  instruments: string[]
+  genres: string[]
+  experience_level: ExperienceLevel
+  is_open_to_gig: boolean
+}): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase.from('musician_profiles').upsert(input)
+  if (error) throw error
 }
