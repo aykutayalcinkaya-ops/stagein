@@ -161,3 +161,13 @@ export async function upsertMusicianProfile(input: {
   const { error } = await supabase.from('musician_profiles').upsert(input)
   if (error) throw error
 }
+
+export async function replaceProfileLinks(userId: string, links: { label: string; url: string }[]): Promise<void> {
+  const supabase = createClient()
+  const { error: deleteError } = await supabase.from('profile_links').delete().eq('user_id', userId)
+  if (deleteError) throw deleteError
+  if (links.length === 0) return
+  const rows = links.map((link, index) => ({ user_id: userId, label: link.label, url: link.url, position: index }))
+  const { error: insertError } = await supabase.from('profile_links').insert(rows)
+  if (insertError) throw insertError
+}
