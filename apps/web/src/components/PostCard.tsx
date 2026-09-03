@@ -1,15 +1,69 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { Post } from '@stagein/shared'
 import { formatRelative } from '@/lib/site'
 import { useAuthStore } from '@/stores/authStore'
 import { useTogglePostLike, useAddComment, useDeletePost } from '@/hooks/useWall'
+import { useVideoSource } from '@/hooks/useVideoSource'
 import { getPostComments } from '@/lib/api'
 import { UserAvatar } from './UserAvatar'
 import { cn } from './ui'
+
+function AutoplayPostVideo({ videoId, thumbnailUrl, video }: { videoId: string; thumbnailUrl: string | null; video: NonNullable<Post['video']> }) {
+  const containerRef = useRef<HTMLAnchorElement>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const src = useVideoSource(video)
+
+  useEffect(() => {
+    const node = containerRef.current
+    if (!node) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const el = videoRef.current
+        if (!el) return
+        if (entry.isIntersecting && entry.intersectionRatio > 0.5) void el.play().catch(() => {})
+        else el.pause()
+      },
+      { threshold: [0, 0.5, 1] }
+    )
+
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [src])
+
+  return (
+    <Link
+      ref={containerRef}
+      href={`/kesfet?v=${videoId}`}
+      className="relative mt-4 flex aspect-video w-full items-center justify-center overflow-hidden rounded-xl bg-black"
+    >
+      {src ? (
+        <video
+          ref={videoRef}
+          src={src}
+          poster={thumbnailUrl ?? undefined}
+          className="absolute inset-0 h-full w-full object-cover"
+          playsInline
+          muted
+          loop
+          preload="metadata"
+        />
+      ) : thumbnailUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={thumbnailUrl} alt="" className="absolute inset-0 h-full w-full object-cover opacity-70" />
+      ) : null}
+      <span className="relative flex h-14 w-14 items-center justify-center rounded-full bg-white/90 text-dark">
+        <svg viewBox="0 0 24 24" fill="currentColor" className="ml-1 h-6 w-6">
+          <path d="M8 5v14l11-7z" />
+        </svg>
+      </span>
+    </Link>
+  )
+}
 
 export function PostCard({ post }: { post: Post }) {
   const author = post.user
@@ -67,20 +121,7 @@ export function PostCard({ post }: { post: Post }) {
       ) : null}
 
       {post.video ? (
-        <Link
-          href={`/kesfet?v=${post.video.id}`}
-          className="relative mt-4 flex aspect-video w-full items-center justify-center overflow-hidden rounded-xl bg-black"
-        >
-          {post.video.thumbnail_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={post.video.thumbnail_url} alt="" className="absolute inset-0 h-full w-full object-cover opacity-70" />
-          ) : null}
-          <span className="relative flex h-14 w-14 items-center justify-center rounded-full bg-white/90 text-dark">
-            <svg viewBox="0 0 24 24" fill="currentColor" className="ml-1 h-6 w-6">
-              <path d="M8 5v14l11-7z" />
-            </svg>
-          </span>
-        </Link>
+        <AutoplayPostVideo videoId={post.video.id} thumbnailUrl={post.video.thumbnail_url} video={post.video} />
       ) : null}
 
       <footer className="mt-4 flex items-center gap-5 border-t border-border pt-3 text-sm">
