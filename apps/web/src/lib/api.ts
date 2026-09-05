@@ -1,6 +1,17 @@
 'use client'
 
-import type { ExperienceLevel, MusicianProfile, Post, PostComment, ProfileLink, User } from '@stagein/shared'
+import type {
+  ExperienceLevel,
+  MusicianProfile,
+  Post,
+  PostComment,
+  PostCommentReply,
+  PostShare,
+  ProfileLink,
+  ReactionType,
+  User,
+  VideoShare,
+} from '@stagein/shared'
 import { createClient } from './supabase/client'
 
 export const USER_SELECT = 'id, username, full_name, avatar_url, city, role, bio, email, created_at'
@@ -119,6 +130,12 @@ export async function deletePost(postId: string): Promise<void> {
   if (error) throw error
 }
 
+export async function deletePostComment(commentId: string): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase.from('post_comments').delete().eq('id', commentId)
+  if (error) throw error
+}
+
 export async function toggleVideoLike(videoId: string, userId: string, like: boolean): Promise<void> {
   const supabase = createClient()
   if (like) {
@@ -170,4 +187,172 @@ export async function replaceProfileLinks(userId: string, links: { label: string
   const rows = links.map((link, index) => ({ user_id: userId, label: link.label, url: link.url, position: index }))
   const { error: insertError } = await supabase.from('profile_links').insert(rows)
   if (insertError) throw insertError
+}
+
+// ---------------------------------------------------------------------------
+// Post reactions
+// ---------------------------------------------------------------------------
+
+export async function addPostReaction(postId: string, userId: string, reactionType: ReactionType): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('post_reactions')
+    .insert({ post_id: postId, user_id: userId, reaction_type: reactionType })
+  if (error) throw error
+}
+
+export async function removePostReaction(postId: string, userId: string, reactionType: ReactionType): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('post_reactions')
+    .delete()
+    .eq('post_id', postId)
+    .eq('user_id', userId)
+    .eq('reaction_type', reactionType)
+  if (error) throw error
+}
+
+export async function getPostUserReaction(postId: string, userId: string): Promise<ReactionType | null> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('post_reactions')
+    .select('reaction_type')
+    .eq('post_id', postId)
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (error) throw error
+  return (data?.reaction_type as ReactionType) ?? null
+}
+
+// ---------------------------------------------------------------------------
+// Video reactions
+// ---------------------------------------------------------------------------
+
+export async function addVideoReaction(videoId: string, userId: string, reactionType: ReactionType): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('video_reactions')
+    .insert({ video_id: videoId, user_id: userId, reaction_type: reactionType })
+  if (error) throw error
+}
+
+export async function removeVideoReaction(videoId: string, userId: string, reactionType: ReactionType): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('video_reactions')
+    .delete()
+    .eq('video_id', videoId)
+    .eq('user_id', userId)
+    .eq('reaction_type', reactionType)
+  if (error) throw error
+}
+
+export async function getVideoUserReaction(videoId: string, userId: string): Promise<ReactionType | null> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('video_reactions')
+    .select('reaction_type')
+    .eq('video_id', videoId)
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (error) throw error
+  return (data?.reaction_type as ReactionType) ?? null
+}
+
+// ---------------------------------------------------------------------------
+// Comment replies
+// ---------------------------------------------------------------------------
+
+export async function addCommentReply(commentId: string, userId: string, body: string): Promise<PostCommentReply> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('post_comment_replies')
+    .insert({ comment_id: commentId, user_id: userId, body })
+    .select(`*, user:users(${USER_SELECT})`)
+    .single()
+  if (error) throw error
+  return data as PostCommentReply
+}
+
+export async function getCommentReplies(commentId: string): Promise<PostCommentReply[]> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('post_comment_replies')
+    .select(`*, user:users(${USER_SELECT})`)
+    .eq('comment_id', commentId)
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return (data ?? []) as PostCommentReply[]
+}
+
+export async function deleteCommentReply(replyId: string): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase.from('post_comment_replies').delete().eq('id', replyId)
+  if (error) throw error
+}
+
+// ---------------------------------------------------------------------------
+// Post shares
+// ---------------------------------------------------------------------------
+
+export async function addPostShare(postId: string, userId: string, caption: string | null = null): Promise<PostShare> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('post_shares')
+    .insert({ post_id: postId, user_id: userId, shared_to_wall: true, caption })
+    .select(`*, user:users(${USER_SELECT})`)
+    .single()
+  if (error) throw error
+  return data as PostShare
+}
+
+export async function removePostShare(postId: string, userId: string): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase.from('post_shares').delete().eq('post_id', postId).eq('user_id', userId)
+  if (error) throw error
+}
+
+export async function hasUserSharedPost(postId: string, userId: string): Promise<boolean> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('post_shares')
+    .select('id')
+    .eq('post_id', postId)
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (error) throw error
+  return !!data
+}
+
+// ---------------------------------------------------------------------------
+// Video shares
+// ---------------------------------------------------------------------------
+
+export async function addVideoShare(videoId: string, userId: string, caption: string | null = null): Promise<VideoShare> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('video_shares')
+    .insert({ video_id: videoId, user_id: userId, shared_to_wall: true, caption })
+    .select(`*, user:users(${USER_SELECT})`)
+    .single()
+  if (error) throw error
+  return data as VideoShare
+}
+
+export async function removeVideoShare(videoId: string, userId: string): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase.from('video_shares').delete().eq('video_id', videoId).eq('user_id', userId)
+  if (error) throw error
+}
+
+export async function hasUserSharedVideo(videoId: string, userId: string): Promise<boolean> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('video_shares')
+    .select('id')
+    .eq('video_id', videoId)
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (error) throw error
+  return !!data
 }

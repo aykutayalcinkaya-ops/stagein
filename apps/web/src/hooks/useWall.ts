@@ -1,16 +1,18 @@
 'use client'
 
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type { Post, PostComment } from '@stagein/shared'
+import type { Post, PostComment, ReactionType } from '@stagein/shared'
 import { createClient } from '@/lib/supabase/client'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { useAuthStore } from '@/stores/authStore'
 import { DEMO_POSTS } from '@/lib/demoContent'
-import { addComment, createPost, deletePost, togglePostLike, type CreatePostInput } from '@/lib/api'
+import { addComment, createPost, deletePost, deletePostComment, togglePostLike, type CreatePostInput } from '@/lib/api'
 
 const PAGE_SIZE = 10
-const POST_SELECT =
-  'id, user_id, body, video_id, photo_urls, like_count, comment_count, created_at, user:users(id, username, full_name, avatar_url, city), video:videos(*)'
+const POST_SELECT = `
+  id, user_id, body, video_id, photo_urls, reactions, comment_count,
+  share_count, created_at, user:users(*), video:videos(*)
+`
 
 async function fetchPostsPage(pageParam: number, viewerId: string | null): Promise<Post[]> {
   const supabase = createClient()
@@ -33,7 +35,18 @@ async function fetchPostsPage(pageParam: number, viewerId: string | null): Promi
       posts.map((p) => p.id)
     )
   const likedIds = new Set((likes ?? []).map((row) => row.post_id as string))
-  return posts.map((p) => ({ ...p, liked_by_me: likedIds.has(p.id) }))
+
+  const { data: userReactions } = await supabase
+    .from('post_reactions')
+    .select('post_id, reaction_type')
+    .eq('user_id', viewerId)
+    .in(
+      'post_id',
+      posts.map((p) => p.id)
+    )
+  const reactionsMap = new Map((userReactions ?? []).map((r) => [r.post_id as string, r.reaction_type as ReactionType]))
+
+  return posts.map((p) => ({ ...p, liked_by_me: likedIds.has(p.id), my_reaction: reactionsMap.get(p.id) ?? null }))
 }
 
 export function useWall(initialPosts: Post[] = []) {
@@ -83,7 +96,7 @@ export function useTogglePostLike() {
         return {
           ...current,
           pages: current.pages.map((page) =>
-            page.map((p) => (p.id === postId ? { ...p, liked_by_me: like, like_count: p.like_count + (like ? 1 : -1) } : p))
+            page.map((p) => (p.id === postId ? { ...p, liked_by_me: like } : p))
           ),
         }
       })
@@ -109,6 +122,28 @@ export function useAddComment() {
       })
       queryClient.setQueryData<PostComment[]>(['post-comments', variables.postId], (current) =>
         current ? [...current, comment] : [comment]
+      )
+    },
+  })
+}
+
+export function useDeleteComment() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: { commentId: string; postId: string }) => deletePostComment(input.commentId),
+    onSuccess: (_data, { commentId, postId }) => {
+      queryClient.setQueryData<{ pages: Post[][]; pageParams: number[] }>(['wall'], (current) => {
+        if (!current) return current
+        return {
+          ...current,
+          pages: current.pages.map((page) =>
+            page.map((p) => (p.id === postId ? { ...p, comment_count: Math.max(0, p.comment_count - 1) } : p))
+          ),
+        }
+      })
+      queryClient.setQueryData<PostComment[]>(['post-comments', postId], (current) =>
+        current ? current.filter((c) => c.id !== commentId) : current
       )
     },
   })

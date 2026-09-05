@@ -3,11 +3,13 @@
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { useVideoFeed } from '@/hooks/useVideoFeed'
+import { useVideoFeedRealtime } from '@/hooks/useRealtimeUpdates'
 import { FeedVideo } from './FeedVideo'
 import { CITIES } from '@stagein/shared'
-import { EmptyState, LinkButton, cn } from './ui'
+import { EmptyState, LinkButton, Skeleton, cn } from './ui'
 
 export function VideoFeed({ startVideoId }: { startVideoId?: string }) {
+  useVideoFeedRealtime()
   const [city, setCity] = useState<string>('')
   const [tab, setTab] = useState<'kesfet' | 'takip'>('kesfet')
   const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = useVideoFeed(
@@ -71,7 +73,9 @@ export function VideoFeed({ startVideoId }: { startVideoId?: string }) {
       </div>
 
       {isLoading ? (
-        <div className="flex h-full items-center justify-center text-sm text-muted">Akış yükleniyor…</div>
+        <div className="flex h-full w-full items-center justify-center bg-black">
+          <Skeleton className="h-4/5 w-full max-w-sm rounded-2xl bg-white/10" />
+        </div>
       ) : isError ? (
         <div className="flex h-full items-center justify-center px-4">
           <EmptyState title="Akış yüklenemedi" description="Bağlantını kontrol edip tekrar dene." />

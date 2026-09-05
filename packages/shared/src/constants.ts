@@ -1,3 +1,23 @@
+import type { ReactionType } from './types'
+
+export const REACTION_EMOJIS: Record<ReactionType, string> = {
+  like: '👍',
+  love: '❤️',
+  wow: '😮',
+  sad: '😢',
+  angry: '😠',
+  haha: '😂',
+}
+
+export const REACTION_LABELS: Record<ReactionType, string> = {
+  like: 'Beğen',
+  love: 'Seviyorum',
+  wow: 'Çok güzel',
+  sad: 'Üzücü',
+  angry: 'Kızgın',
+  haha: 'Komik',
+}
+
 export const CITIES = [
   'İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Antalya',
   'Adana', 'Konya', 'Gaziantep', 'Mersin', 'Eskişehir',

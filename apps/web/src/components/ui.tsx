@@ -88,6 +88,10 @@ export function SectionTitle({ children, sub, kicker }: { children: ReactNode; s
   )
 }
 
+export function Skeleton({ className }: { className?: string }) {
+  return <div className={cn('animate-pulse rounded-lg bg-white/[0.06]', className)} />
+}
+
 export function EmptyState({ title, description, action }: { title: string; description?: string; action?: ReactNode }) {
   return (
     <div className="rounded-2xl border border-dashed border-border-strong bg-card/50 px-6 py-16 text-center">

@@ -2,11 +2,16 @@
 
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
-import type { Video } from '@stagein/shared'
-import { useToggleVideoLike } from '@/hooks/useVideoFeed'
+import type { ReactionType, Video } from '@stagein/shared'
+import { REACTION_EMOJIS, REACTION_LABELS } from '@stagein/shared'
+import { useVideoToggleReaction } from '@/hooks/usePostReactions'
+import { useToggleVideoShare } from '@/hooks/usePostShares'
 import { useVideoSource } from '@/hooks/useVideoSource'
 import { useAuthStore } from '@/stores/authStore'
+import { sortedReactionEntries } from '@/lib/site'
 import { UserAvatar } from './UserAvatar'
+import { ReactionPicker } from './ReactionPicker'
+import { ShareMenu } from './ShareMenu'
 
 function IconButton({
   onClick,
@@ -41,6 +46,51 @@ function IconButton({
   )
 }
 
+function VideoReactionPanel({ video }: { video: Video }) {
+  const userId = useAuthStore((s) => s.userId)
+  const { mutate: toggleReaction, isPending } = useVideoToggleReaction()
+  const topReactions = sortedReactionEntries(video.reactions).slice(0, 3)
+  const myReaction = video.my_reaction ?? null
+
+  function quickToggle(reaction: ReactionType) {
+    if (!userId) return
+    const add = reaction !== myReaction
+    toggleReaction({ videoId: video.id, reactionType: reaction, add, oldReaction: myReaction })
+  }
+
+  return (
+    <div className="pointer-events-auto flex flex-col items-center gap-1.5">
+      {topReactions.map(([reaction, count]) => (
+        <IconButton
+          key={reaction}
+          onClick={() => quickToggle(reaction)}
+          active={myReaction === reaction}
+          label={REACTION_LABELS[reaction]}
+          count={count}
+        >
+          <span className="text-lg leading-none">{REACTION_EMOJIS[reaction]}</span>
+        </IconButton>
+      ))}
+
+      {userId ? (
+        <ReactionPicker
+          postId=""
+          videoId={video.id}
+          currentReaction={myReaction}
+          isLoading={isPending}
+          onSelect={quickToggle}
+        />
+      ) : (
+        <Link href="/giris" className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5">
+            <path d="M12 21s-6.7-4.3-9.3-8.1C.8 10 1.4 6.4 4.4 4.8c2.1-1.1 4.6-.6 6.1 1.2.4.5.7.9 1.5.9.8 0 1.1-.4 1.5-.9 1.5-1.8 4-2.3 6.1-1.2 3 1.6 3.6 5.2 1.7 8.1C18.7 16.7 12 21 12 21Z" />
+          </svg>
+        </Link>
+      )}
+    </div>
+  )
+}
+
 export function FeedVideo({ video }: { video: Video }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -49,7 +99,8 @@ export function FeedVideo({ video }: { video: Video }) {
   const [progress, setProgress] = useState(0)
   const [burst, setBurst] = useState(false)
   const userId = useAuthStore((s) => s.userId)
-  const { mutate: toggleLike, isPending: isLiking } = useToggleVideoLike()
+  const { mutate: toggleReaction } = useVideoToggleReaction()
+  const { mutate: toggleShare } = useToggleVideoShare()
 
   // Ekranda yalnızca görünür video oynar.
   useEffect(() => {
@@ -70,14 +121,11 @@ export function FeedVideo({ video }: { video: Video }) {
     return () => observer.disconnect()
   }, [src])
 
-  function handleToggleLike() {
-    if (!userId) return
-    toggleLike({ videoId: video.id, like: !(video.liked_by_me ?? false) })
-  }
-
   function handleDoubleClick() {
     if (!userId) return
-    if (!(video.liked_by_me ?? false)) handleToggleLike()
+    if ((video.my_reaction ?? null) !== 'love') {
+      toggleReaction({ videoId: video.id, reactionType: 'love', add: true, oldReaction: video.my_reaction ?? null })
+    }
     setBurst(true)
     window.setTimeout(() => setBurst(false), 700)
   }
@@ -196,13 +244,17 @@ export function FeedVideo({ video }: { video: Video }) {
             </Link>
           ) : null}
 
-          <IconButton onClick={handleToggleLike} active={video.liked_by_me} label="Beğen" count={video.like_count ?? 0}>
-            <svg viewBox="0 0 24 24" fill={video.liked_by_me ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={video.liked_by_me ? 0 : 1.8} className="h-6 w-6">
-              <path d="M12 21s-6.7-4.3-9.3-8.1C.8 10 1.4 6.4 4.4 4.8c2.1-1.1 4.6-.6 6.1 1.2.4.5.7.9 1.5.9.8 0 1.1-.4 1.5-.9 1.5-1.8 4-2.3 6.1-1.2 3 1.6 3.6 5.2 1.7 8.1C18.7 16.7 12 21 12 21Z" />
-            </svg>
-          </IconButton>
+          <VideoReactionPanel video={video} />
 
-          <IconButton label="Yorum" count={0}>
+          <div className="pointer-events-auto">
+            <ShareMenu
+              postId={video.id}
+              videoId={video.id}
+              onShareToWall={(caption) => toggleShare({ videoId: video.id, shared: true, caption })}
+            />
+          </div>
+
+          <IconButton label="Cevaplar" count={0}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-6 w-6">
               <path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H7l-4 3 .5-4.5A8.5 8.5 0 1 1 21 11.5Z" />
             </svg>

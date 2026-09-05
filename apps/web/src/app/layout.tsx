@@ -4,6 +4,7 @@ import { Providers } from './providers'
 import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
 import { AuthSync } from '@/components/AuthSync'
+import { ToastViewport } from '@/components/ToastViewport'
 import { SITE_URL } from '@/lib/site'
 import './globals.css'
 
@@ -55,6 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <main className="flex-1">{children}</main>
             <SiteFooter />
           </div>
+          <ToastViewport />
         </Providers>
       </body>
     </html>

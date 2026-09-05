@@ -1,3 +1,52 @@
+export type ReactionType = 'like' | 'love' | 'wow' | 'sad' | 'angry' | 'haha'
+
+export interface PostReaction {
+  id: string
+  post_id: string
+  user_id: string
+  reaction_type: ReactionType
+  created_at: string
+  user?: User
+}
+
+export interface VideoReaction {
+  id: string
+  video_id: string
+  user_id: string
+  reaction_type: ReactionType
+  created_at: string
+  user?: User
+}
+
+export interface PostCommentReply {
+  id: string
+  comment_id: string
+  user_id: string
+  body: string
+  created_at: string
+  user?: User
+}
+
+export interface PostShare {
+  id: string
+  post_id: string
+  user_id: string
+  shared_to_wall: boolean
+  caption: string | null
+  created_at: string
+  user?: User
+}
+
+export interface VideoShare {
+  id: string
+  video_id: string
+  user_id: string
+  shared_to_wall: boolean
+  caption: string | null
+  created_at: string
+  user?: User
+}
+
 export type UserRole = 'musician' | 'studio' | 'teacher' | 'admin'
 export type ExperienceLevel = 'beginner' | 'intermediate' | 'professional'
 export type BadgeType = 'blue' | 'grey'
@@ -38,11 +87,13 @@ export interface Video {
   city: string | null
   instruments: string[]
   genres: string[]
-  like_count: number
+  reactions: Record<ReactionType, number>
+  share_count: number
   view_count: number
   created_at: string
   user?: User
   liked_by_me?: boolean
+  my_reaction?: ReactionType | null
 }
 
 export interface Listing {
@@ -132,12 +183,14 @@ export interface Post {
   body: string | null
   video_id: string | null
   photo_urls: string[]
-  like_count: number
+  reactions: Record<ReactionType, number>
+  share_count: number
   comment_count: number
   created_at: string
   user?: User
   video?: Video
   liked_by_me?: boolean
+  my_reaction?: ReactionType | null
 }
 
 export interface PostComment {
@@ -147,6 +200,8 @@ export interface PostComment {
   body: string
   created_at: string
   user?: User
+  reply_count: number
+  replies?: PostCommentReply[]
 }
 
 export interface ProfileLink {

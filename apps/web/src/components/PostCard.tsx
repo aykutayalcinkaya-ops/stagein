@@ -3,13 +3,19 @@
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import type { Post } from '@stagein/shared'
-import { formatRelative } from '@/lib/site'
+import type { Post, ReactionType } from '@stagein/shared'
+import { REACTION_EMOJIS } from '@stagein/shared'
+import { formatRelative, sortedReactionEntries, sumReactions } from '@/lib/site'
 import { useAuthStore } from '@/stores/authStore'
-import { useTogglePostLike, useAddComment, useDeletePost } from '@/hooks/useWall'
+import { useAddComment, useDeleteComment, useDeletePost } from '@/hooks/useWall'
+import { useTogglePostReaction } from '@/hooks/usePostReactions'
+import { useTogglePostShare } from '@/hooks/usePostShares'
 import { useVideoSource } from '@/hooks/useVideoSource'
 import { getPostComments } from '@/lib/api'
 import { UserAvatar } from './UserAvatar'
+import { ReactionPicker } from './ReactionPicker'
+import { CommentThread } from './CommentThread'
+import { ShareMenu } from './ShareMenu'
 import { cn } from './ui'
 
 function AutoplayPostVideo({ videoId, thumbnailUrl, video }: { videoId: string; thumbnailUrl: string | null; video: NonNullable<Post['video']> }) {
@@ -68,7 +74,8 @@ function AutoplayPostVideo({ videoId, thumbnailUrl, video }: { videoId: string; 
 export function PostCard({ post }: { post: Post }) {
   const author = post.user
   const userId = useAuthStore((s) => s.userId)
-  const { mutate: toggleLike } = useTogglePostLike()
+  const { mutate: toggleReaction, isPending: isReacting } = useTogglePostReaction()
+  const { mutate: toggleShare } = useTogglePostShare()
   const [commentsOpen, setCommentsOpen] = useState(false)
   const { data: comments } = useQuery({
     queryKey: ['post-comments', post.id],
@@ -76,9 +83,18 @@ export function PostCard({ post }: { post: Post }) {
     enabled: commentsOpen,
   })
   const { mutate: addPostComment, isPending: isCommenting } = useAddComment()
+  const { mutate: removeComment } = useDeleteComment()
   const [commentBody, setCommentBody] = useState('')
   const { mutate: removePost } = useDeletePost()
   const isOwner = userId === post.user_id
+
+  function handleReactionSelect(reaction: ReactionType) {
+    const add = reaction !== post.my_reaction
+    toggleReaction({ postId: post.id, reactionType: reaction, add, oldReaction: post.my_reaction })
+  }
+
+  const reactionEntries = sortedReactionEntries(post.reactions)
+  const totalReactions = sumReactions(post.reactions)
 
   return (
     <article className="rounded-2xl border border-border bg-card p-5">
@@ -124,50 +140,52 @@ export function PostCard({ post }: { post: Post }) {
         <AutoplayPostVideo videoId={post.video.id} thumbnailUrl={post.video.thumbnail_url} video={post.video} />
       ) : null}
 
-      <footer className="mt-4 flex items-center gap-5 border-t border-border pt-3 text-sm">
+      {reactionEntries.length > 0 ? (
+        <div className="mt-3 flex items-center gap-2 text-xs text-muted">
+          {reactionEntries.map(([reaction, count]) => (
+            <span key={reaction} className="flex items-center gap-1">
+              <span>{REACTION_EMOJIS[reaction]}</span>
+              <span>{count}</span>
+            </span>
+          ))}
+          {totalReactions > 0 ? <span className="text-muted">· {totalReactions} reaksiyon</span> : null}
+        </div>
+      ) : null}
+
+      <footer className="mt-3 flex items-center gap-5 border-t border-border pt-3 text-sm">
         {userId ? (
-          <button
-            type="button"
-            onClick={() => toggleLike({ postId: post.id, like: !post.liked_by_me })}
-            className={cn('flex items-center gap-1.5 font-medium', post.liked_by_me ? 'text-accent' : 'text-muted hover:text-white')}
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill={post.liked_by_me ? 'currentColor' : 'none'}
-              stroke="currentColor"
-              strokeWidth={post.liked_by_me ? 0 : 1.8}
-              className="h-4 w-4"
-            >
-              <path d="M12 21s-6.7-4.3-9.3-8.1C.8 10 1.4 6.4 4.4 4.8c2.1-1.1 4.6-.6 6.1 1.2.4.5.7.9 1.5.9.8 0 1.1-.4 1.5-.9 1.5-1.8 4-2.3 6.1-1.2 3 1.6 3.6 5.2 1.7 8.1C18.7 16.7 12 21 12 21Z" />
-            </svg>
-            {post.like_count} beğeni
-          </button>
+          <ReactionPicker
+            postId={post.id}
+            currentReaction={post.my_reaction ?? null}
+            isLoading={isReacting}
+            onSelect={handleReactionSelect}
+          />
         ) : (
           <Link href="/giris" className="flex items-center gap-1.5 text-muted hover:text-white">
-            {post.like_count} beğeni
+            Beğen
           </Link>
         )}
         <button type="button" onClick={() => setCommentsOpen((v) => !v)} className="text-muted hover:text-white">
           {post.comment_count} yorum
         </button>
+        <ShareMenu
+          postId={post.id}
+          videoId={post.video?.id}
+          onShareToWall={(caption) => toggleShare({ postId: post.id, shared: true, caption })}
+        />
       </footer>
 
       {commentsOpen ? (
         <div className="mt-3 flex flex-col gap-3 border-t border-border pt-3">
           {(comments ?? []).map((comment) => (
-            <div key={comment.id} className="flex gap-2">
-              <UserAvatar
-                name={comment.user?.full_name}
-                username={comment.user?.username}
-                url={comment.user?.avatar_url}
-                size={28}
-              />
-              <div className="rounded-lg bg-surface px-3 py-2 text-sm">
-                <span className="font-semibold text-text">{comment.user?.full_name ?? comment.user?.username}</span>{' '}
-                <span className="text-text-secondary">{comment.body}</span>
-                <div className="mt-1 text-[11px] text-muted">{formatRelative(comment.created_at)}</div>
-              </div>
-            </div>
+            <CommentThread
+              key={comment.id}
+              comment={comment}
+              isPostOwner={isOwner}
+              postUserId={post.user_id}
+              compact
+              onDelete={(commentId) => removeComment({ commentId, postId: post.id })}
+            />
           ))}
 
           {userId ? (

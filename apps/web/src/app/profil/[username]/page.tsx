@@ -15,7 +15,7 @@ import {
   getUserPosts,
   getUserVideos,
 } from '@/lib/data'
-import { EXPERIENCE_LABELS, LISTING_TYPE_LABELS, SITE_URL, formatDate } from '@/lib/site'
+import { EXPERIENCE_LABELS, LISTING_TYPE_LABELS, SITE_URL, formatDate, sumReactions } from '@/lib/site'
 
 interface PageProps {
   params: Promise<{ username: string }>
@@ -149,7 +149,7 @@ export default async function ProfilPage({ params }: PageProps) {
                 </div>
                 <div className="flex items-center justify-between px-3 py-2 text-xs text-muted">
                   <span>{video.view_count} izlenme</span>
-                  <span>{video.like_count} beğeni</span>
+                  <span>{sumReactions(video.reactions)} reaksiyon</span>
                 </div>
               </div>
             ))}

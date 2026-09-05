@@ -1,7 +1,7 @@
 'use client'
 
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type { Video } from '@stagein/shared'
+import type { ReactionType, Video } from '@stagein/shared'
 import { createClient } from '@/lib/supabase/client'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { toggleVideoLike } from '@/lib/api'
@@ -22,6 +22,8 @@ async function fetchStartVideo(id: string): Promise<Video | null> {
 }
 
 export function useVideoFeed(city?: string, startVideoId?: string) {
+  const userId = useAuthStore((s) => s.userId)
+
   return useInfiniteQuery({
     queryKey: ['feed', city ?? 'all', startVideoId ?? 'none'],
     initialPageParam: 0,
@@ -55,6 +57,21 @@ export function useVideoFeed(city?: string, startVideoId?: string) {
         }
       }
 
+      if (userId && rows.length > 0) {
+        const realRowIds = rows.filter((v) => !v.id.startsWith('demo-')).map((v) => v.id)
+        if (realRowIds.length > 0) {
+          const { data: userReactions } = await supabase
+            .from('video_reactions')
+            .select('video_id, reaction_type')
+            .eq('user_id', userId)
+            .in('video_id', realRowIds)
+          const reactionsMap = new Map(
+            (userReactions ?? []).map((r) => [r.video_id as string, r.reaction_type as ReactionType])
+          )
+          rows = rows.map((v) => ({ ...v, my_reaction: reactionsMap.get(v.id) ?? null }))
+        }
+      }
+
       return rows
     },
     getNextPageParam: (lastPage, allPages) =>
@@ -79,7 +96,7 @@ export function useToggleVideoLike() {
           pages: current.pages.map((page) =>
             page.map((v) =>
               v.id === videoId
-                ? { ...v, liked_by_me: like, like_count: Math.max(0, (v.like_count ?? 0) + (like ? 1 : -1)) }
+                ? { ...v, liked_by_me: like }
                 : v
             )
           ),

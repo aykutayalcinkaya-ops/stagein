@@ -1,4 +1,8 @@
-import type { Post, Video } from '@stagein/shared'
+import type { Post, ReactionType, Video } from '@stagein/shared'
+
+function emptyReactions(like: number): Record<ReactionType, number> {
+  return { like, love: 0, wow: 0, sad: 0, angry: 0, haha: 0 }
+}
 
 /**
  * Örnek Keşfet içeriği — canlı Supabase projesinde henüz gerçek video yokken
@@ -16,7 +20,8 @@ export const DEMO_VIDEOS: Video[] = [
     city: 'İstanbul',
     instruments: ['Gitar'],
     genres: ['Rock'],
-    like_count: 128,
+    reactions: emptyReactions(128),
+    share_count: 0,
     view_count: 2140,
     created_at: new Date().toISOString(),
     user: {
@@ -41,7 +46,8 @@ export const DEMO_VIDEOS: Video[] = [
     city: 'İzmir',
     instruments: ['Vokalist'],
     genres: ['Pop'],
-    like_count: 342,
+    reactions: emptyReactions(342),
+    share_count: 0,
     view_count: 5890,
     created_at: new Date().toISOString(),
     user: {
@@ -66,7 +72,8 @@ export const DEMO_VIDEOS: Video[] = [
     city: 'Ankara',
     instruments: ['Davul'],
     genres: ['Metal'],
-    like_count: 87,
+    reactions: emptyReactions(87),
+    share_count: 0,
     view_count: 1430,
     created_at: new Date().toISOString(),
     user: {
@@ -94,12 +101,14 @@ export const DEMO_POSTS: Post[] = [
     body: 'Yeni prova kaydı geldi, dinleyin 🎸',
     video_id: 'demo-guitarist',
     photo_urls: [],
-    like_count: 24,
+    reactions: emptyReactions(24),
+    share_count: 0,
     comment_count: 3,
     created_at: new Date().toISOString(),
     user: DEMO_VIDEOS[0].user,
     video: DEMO_VIDEOS[0],
     liked_by_me: false,
+    my_reaction: null,
   },
   {
     id: 'demo-post-2',
@@ -107,11 +116,13 @@ export const DEMO_POSTS: Post[] = [
     body: 'Bu akşam stüdyoda çekilenler 📸',
     video_id: null,
     photo_urls: ['/demo/avatars/singer.png'],
-    like_count: 12,
+    reactions: emptyReactions(12),
+    share_count: 0,
     comment_count: 1,
     created_at: new Date(Date.now() - 3_600_000).toISOString(),
     user: DEMO_VIDEOS[1].user,
     liked_by_me: false,
+    my_reaction: null,
   },
   {
     id: 'demo-post-3',
@@ -119,10 +130,12 @@ export const DEMO_POSTS: Post[] = [
     body: 'Yeni grup arkadaşı arıyorum, DM atın.',
     video_id: null,
     photo_urls: [],
-    like_count: 5,
+    reactions: emptyReactions(5),
+    share_count: 0,
     comment_count: 0,
     created_at: new Date(Date.now() - 7_200_000).toISOString(),
     user: DEMO_VIDEOS[2].user,
     liked_by_me: false,
+    my_reaction: null,
   },
 ]
