@@ -168,11 +168,14 @@ export function PostCard({ post }: { post: Post }) {
         <button type="button" onClick={() => setCommentsOpen((v) => !v)} className="text-muted hover:text-white">
           {post.comment_count} yorum
         </button>
-        <ShareMenu
-          postId={post.id}
-          videoId={post.video?.id}
-          onShareToWall={(caption) => toggleShare({ postId: post.id, shared: true, caption })}
-        />
+        <span className="flex items-center gap-1.5">
+          <ShareMenu
+            postId={post.id}
+            videoId={post.video?.id}
+            onShareToWall={(caption) => toggleShare({ postId: post.id, shared: true, caption })}
+          />
+          {post.share_count > 0 ? <span className="text-muted">{post.share_count}</span> : null}
+        </span>
       </footer>
 
       {commentsOpen ? (

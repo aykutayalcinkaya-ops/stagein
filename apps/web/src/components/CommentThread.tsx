@@ -122,7 +122,11 @@ export function CommentThread({ comment, isPostOwner, postUserId, onDelete, onRe
 
         <div className="mt-1 flex items-center gap-3 text-[11px] text-muted">
           <span>{formatRelative(comment.created_at)}</span>
-          {comment.reply_count > 0 ? (
+          {userId ? (
+            <button type="button" onClick={() => setShowReplies((v) => !v)} className="font-medium hover:text-white">
+              {comment.reply_count > 0 ? `${comment.reply_count} cevap` : 'Cevapla'}
+            </button>
+          ) : comment.reply_count > 0 ? (
             <button type="button" onClick={() => setShowReplies((v) => !v)} className="font-medium hover:text-white">
               {comment.reply_count} cevap
             </button>
