@@ -59,6 +59,8 @@ export function ReactionPicker({ postId, videoId, currentReaction, isLoading, on
         disabled={isLoading}
         aria-haspopup="true"
         aria-expanded={open}
+        aria-label={triggerLabel}
+        title={triggerLabel}
         className={cn(
           'flex items-center gap-1.5 rounded-full px-2 py-1 text-sm font-medium transition-colors duration-150 disabled:opacity-50',
           currentReaction ? 'text-accent' : 'text-muted hover:text-white'
@@ -71,7 +73,6 @@ export function ReactionPicker({ postId, videoId, currentReaction, isLoading, on
             <path d="M12 21s-6.7-4.3-9.3-8.1C.8 10 1.4 6.4 4.4 4.8c2.1-1.1 4.6-.6 6.1 1.2.4.5.7.9 1.5.9.8 0 1.1-.4 1.5-.9 1.5-1.8 4-2.3 6.1-1.2 3 1.6 3.6 5.2 1.7 8.1C18.7 16.7 12 21 12 21Z" />
           </svg>
         )}
-        {triggerLabel}
       </button>
 
       {open ? (
