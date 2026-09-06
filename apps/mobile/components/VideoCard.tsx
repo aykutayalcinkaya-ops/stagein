@@ -104,7 +104,9 @@ export function VideoCard({
 
           <View className="flex-row items-center gap-1">
             <Ionicons name="heart" size={16} color={colors.accent} />
-            <Text className="text-sm text-text-secondary">{formatCount(video.like_count)}</Text>
+            <Text className="text-sm text-text-secondary">
+              {formatCount(Object.values(video.reactions ?? {}).reduce((sum, n) => sum + n, 0))}
+            </Text>
           </View>
           <View className="flex-row items-center gap-1">
             <Ionicons name="play" size={16} color={colors.muted} />

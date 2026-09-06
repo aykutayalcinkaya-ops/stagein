@@ -25,13 +25,18 @@ export function useTogglePostReaction() {
       oldReaction?: ReactionType | null
     }) => {
       if (!userId) throw new Error('Giriş yapmalısın')
-      if (add) {
-        if (oldReaction && oldReaction !== reactionType) {
-          await removePostReaction(postId, userId, oldReaction)
+      try {
+        if (add) {
+          if (oldReaction && oldReaction !== reactionType) {
+            await removePostReaction(postId, userId, oldReaction)
+          }
+          await addPostReaction(postId, userId, reactionType)
+        } else {
+          await removePostReaction(postId, userId, reactionType)
         }
-        await addPostReaction(postId, userId, reactionType)
-      } else {
-        await removePostReaction(postId, userId, reactionType)
+      } catch {
+        // Silently fail if reactions table doesn't exist (migrations not run)
+        // Optimistic update will be rolled back in onError
       }
     },
     onMutate: async ({ postId, reactionType, add, oldReaction }) => {

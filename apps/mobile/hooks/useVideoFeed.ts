@@ -14,13 +14,17 @@ const NO_INSTRUMENTS: string[] = []
  * Sıralama (fikirson.md): önce kullanıcının şehri, sonra aynı enstrüman,
  * sonra popülerlik. Şehir filtresi sorguda, kalan iki kriter sayfa içinde uygulanır.
  */
+function totalReactions(v: Video) {
+  return Object.values(v.reactions ?? {}).reduce((sum, n) => sum + n, 0)
+}
+
 function rank(videos: Video[], instruments: string[]) {
   if (instruments.length === 0) return videos
   const score = (v: Video) => (v.instruments.some((i) => instruments.includes(i)) ? 1 : 0)
   return [...videos].sort((a, b) => {
     const byInstrument = score(b) - score(a)
     if (byInstrument !== 0) return byInstrument
-    return b.like_count + b.view_count - (a.like_count + a.view_count)
+    return totalReactions(b) + b.view_count - (totalReactions(a) + a.view_count)
   })
 }
 
