@@ -121,6 +121,33 @@ export default async function IlanDetayPage({ params }: PageProps) {
           <dt className="text-xs uppercase tracking-wider text-muted">Şehir</dt>
           <dd className="mt-3 text-sm text-text-secondary">{listing.city ?? 'Belirtilmedi'}</dd>
         </div>
+
+        {listing.is_paid && (listing.budget_min || listing.budget_max) && (
+          <div className="rounded-xl border border-border bg-card p-5">
+            <dt className="text-xs uppercase tracking-wider text-muted">Bütçe</dt>
+            <dd className="mt-3 text-sm font-semibold text-text-secondary">
+              {listing.budget_min && listing.budget_max
+                ? `₺${listing.budget_min.toLocaleString('tr-TR')} - ₺${listing.budget_max.toLocaleString('tr-TR')}`
+                : listing.budget_min
+                  ? `₺${listing.budget_min.toLocaleString('tr-TR')}+`
+                  : `₺${listing.budget_max?.toLocaleString('tr-TR')} adedine kadar`}
+            </dd>
+          </div>
+        )}
+
+        {listing.venue_name && (
+          <div className="rounded-xl border border-border bg-card p-5">
+            <dt className="text-xs uppercase tracking-wider text-muted">Mekan</dt>
+            <dd className="mt-3 text-sm text-text-secondary">{listing.venue_name}</dd>
+          </div>
+        )}
+
+        {listing.event_date && (
+          <div className="rounded-xl border border-border bg-card p-5">
+            <dt className="text-xs uppercase tracking-wider text-muted">Etkinlik Tarihi</dt>
+            <dd className="mt-3 text-sm text-text-secondary">{formatDate(listing.event_date)}</dd>
+          </div>
+        )}
       </dl>
 
       <section className="mt-10 rounded-xl border border-border bg-card p-6">

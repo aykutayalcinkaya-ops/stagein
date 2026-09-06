@@ -51,8 +51,9 @@ export type UserRole = 'musician' | 'studio' | 'teacher' | 'admin'
 export type ExperienceLevel = 'beginner' | 'intermediate' | 'professional'
 export type BadgeType = 'blue' | 'grey'
 export type BadgeStatus = 'pending' | 'approved' | 'rejected'
-export type ListingType = 'band' | 'session' | 'lesson'
+export type ListingType = 'band' | 'session' | 'lesson' | 'venue'
 export type ListingStatus = 'active' | 'closed' | 'expired'
+export type ApplicationStatus = 'pending' | 'accepted' | 'rejected'
 export type BookingStatus = 'pending' | 'confirmed' | 'cancelled'
 export type MarketplaceStatus = 'active' | 'sold' | 'reserved'
 export type ContextType = 'video' | 'listing' | 'direct'
@@ -115,8 +116,24 @@ export interface Listing {
   is_paid: boolean
   status: ListingStatus
   expires_at: string
+  budget_min?: number | null
+  budget_max?: number | null
+  event_date?: string | null
+  venue_name?: string | null
   created_at: string
   user?: User
+}
+
+export interface ListingApplication {
+  id: string
+  listing_id: string
+  applicant_id: string
+  message: string
+  sample_video_id?: string | null
+  status: ApplicationStatus
+  created_at: string
+  listing?: Listing
+  applicant?: User
 }
 
 export interface Message {

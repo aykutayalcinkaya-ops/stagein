@@ -2,6 +2,8 @@
 
 import type {
   ExperienceLevel,
+  Listing,
+  ListingApplication,
   MusicianProfile,
   Post,
   PostComment,
@@ -406,4 +408,82 @@ export async function hasUserSharedVideo(videoId: string, userId: string): Promi
     .maybeSingle()
   if (error) throw error
   return !!data
+}
+
+// ---------------------------------------------------------------------------
+// Listings
+// ---------------------------------------------------------------------------
+
+export async function createListing(input: {
+  title: string
+  type: Listing['type']
+  description: string
+  city: string
+  instruments: string[]
+  genres: string[]
+  is_paid: boolean
+  budget_min?: number | null
+  budget_max?: number | null
+  event_date?: string | null
+  venue_name?: string | null
+}): Promise<Listing> {
+  const supabase = createClient()
+  const { data, error } = await supabase.from('listings').insert(input).select().single()
+  if (error) throw error
+  return data as Listing
+}
+
+export async function updateListing(id: string, input: Partial<Listing>): Promise<Listing> {
+  const supabase = createClient()
+  const { data, error } = await supabase.from('listings').update(input).eq('id', id).select().single()
+  if (error) throw error
+  return data as Listing
+}
+
+export async function deleteListing(id: string): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase.from('listings').delete().eq('id', id)
+  if (error) throw error
+}
+
+export async function applyToListing(input: {
+  listing_id: string
+  applicant_id: string
+  message: string
+  sample_video_id?: string | null
+}): Promise<ListingApplication> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('listing_applications')
+    .insert(input)
+    .select()
+    .single()
+  if (error) throw error
+  return data as ListingApplication
+}
+
+export async function getListingApplications(listingId: string): Promise<ListingApplication[]> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('listing_applications')
+    .select(`*, applicant:applicant_id(${USER_SELECT})`)
+    .eq('listing_id', listingId)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return (data as ListingApplication[]) ?? []
+}
+
+export async function updateApplicationStatus(
+  id: string,
+  status: ListingApplication['status']
+): Promise<ListingApplication> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('listing_applications')
+    .update({ status })
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data as ListingApplication
 }

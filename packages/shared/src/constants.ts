@@ -1,4 +1,11 @@
-import type { ReactionType } from './types'
+import type { ReactionType, ListingType } from './types'
+
+export const LISTING_TYPE_LABELS: Record<ListingType, string> = {
+  band: 'Grup Üyesi / Gruba Katılma',
+  session: 'Session / Sahne Müzisyeni',
+  lesson: 'Müzik Dersi',
+  venue: 'Mekan / Sahne',
+}
 
 export const REACTION_EMOJIS: Record<ReactionType, string> = {
   like: '👍',
