@@ -36,7 +36,7 @@ async function fetchPostsPage(pageParam: number, viewerId: string | null): Promi
     )
   const likedIds = new Set((likes ?? []).map((row) => row.post_id as string))
 
-  const { data: userReactions } = await supabase
+  const { data: userReactions, error: reactionsError } = await supabase
     .from('post_reactions')
     .select('post_id, reaction_type')
     .eq('user_id', viewerId)
@@ -44,7 +44,9 @@ async function fetchPostsPage(pageParam: number, viewerId: string | null): Promi
       'post_id',
       posts.map((p) => p.id)
     )
-  const reactionsMap = new Map((userReactions ?? []).map((r) => [r.post_id as string, r.reaction_type as ReactionType]))
+  const reactionsMap = new Map(
+    !reactionsError && userReactions ? (userReactions as Array<{post_id: string; reaction_type: ReactionType}>).map((r) => [r.post_id, r.reaction_type]) : []
+  )
 
   return posts.map((p) => ({ ...p, liked_by_me: likedIds.has(p.id), my_reaction: reactionsMap.get(p.id) ?? null }))
 }
