@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { useVideoFeed } from '@/hooks/useVideoFeed'
 import { useVideoFeedRealtime } from '@/hooks/useRealtimeUpdates'
+import { useFeedPlaybackStore } from '@/stores/feedPlaybackStore'
 import { FeedVideo } from './FeedVideo'
 import { CITIES } from '@stagein/shared'
 import { EmptyState, LinkButton, Skeleton, cn } from './ui'
@@ -17,6 +18,9 @@ export function VideoFeed({ startVideoId }: { startVideoId?: string }) {
     startVideoId
   )
   const sentinelRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const toggleMuted = useFeedPlaybackStore((s) => s.toggleMuted)
+  const togglePaused = useFeedPlaybackStore((s) => s.togglePaused)
 
   useEffect(() => {
     const node = sentinelRef.current
@@ -29,6 +33,31 @@ export function VideoFeed({ startVideoId }: { startVideoId?: string }) {
     observer.observe(node)
     return () => observer.disconnect()
   }, [fetchNextPage, hasNextPage, isFetchingNextPage])
+
+  // Klavye kısayolları: ArrowUp/ArrowDown video değiştirir, Space oynat/duraklat, M sessize alır.
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      const target = e.target as HTMLElement | null
+      if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
+
+      const container = scrollRef.current
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        container?.scrollBy({ top: container.clientHeight })
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        container?.scrollBy({ top: -container.clientHeight })
+      } else if (e.key === ' ' || e.code === 'Space') {
+        e.preventDefault()
+        togglePaused()
+      } else if (e.key === 'm' || e.key === 'M') {
+        toggleMuted()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [toggleMuted, togglePaused])
 
   const videos = data?.pages.flat() ?? []
 
@@ -56,20 +85,30 @@ export function VideoFeed({ startVideoId }: { startVideoId?: string }) {
           ))}
         </div>
 
-        <select
-          value={city}
-          onChange={(e) => setCity(e.target.value)}
-          className="pointer-events-auto rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-medium text-white outline-none backdrop-blur-md"
-        >
-          <option value="" className="text-dark">
-            Tüm şehirler
-          </option>
-          {CITIES.map((c) => (
-            <option key={c} value={c} className="text-dark">
-              {c}
+        <div className="pointer-events-auto flex items-center gap-2">
+          <select
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-medium text-white outline-none backdrop-blur-md"
+          >
+            <option value="" className="text-dark">
+              Tüm şehirler
             </option>
-          ))}
-        </select>
+            {CITIES.map((c) => (
+              <option key={c} value={c} className="text-dark">
+                {c}
+              </option>
+            ))}
+          </select>
+
+          <Link
+            href="/kesfet/yukle"
+            aria-label="Video ekle"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-lg font-bold text-white backdrop-blur-md hover:bg-white/20"
+          >
+            +
+          </Link>
+        </div>
       </div>
 
       {isLoading ? (
@@ -101,7 +140,7 @@ export function VideoFeed({ startVideoId }: { startVideoId?: string }) {
           />
         </div>
       ) : (
-        <div className="h-full snap-y snap-mandatory overflow-y-scroll overscroll-y-contain">
+        <div ref={scrollRef} className="h-full snap-y snap-mandatory overflow-y-scroll overscroll-y-contain">
           {videos.map((video) => (
             <FeedVideo key={video.id} video={video} />
           ))}

@@ -4,7 +4,13 @@ import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-q
 import type { ReactionType, Video } from '@stagein/shared'
 import { createClient } from '@/lib/supabase/client'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
-import { toggleVideoLike } from '@/lib/api'
+import {
+  createVideoFromFile,
+  createYoutubeVideo,
+  toggleVideoLike,
+  type CreateYoutubeVideoInput,
+  type VideoMetadataInput,
+} from '@/lib/api'
 import { DEMO_VIDEOS } from '@/lib/demoContent'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -102,6 +108,29 @@ export function useToggleVideoLike() {
           ),
         }
       })
+    },
+  })
+}
+
+export function useUploadVideo() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: { userId: string; file: File; metadata: VideoMetadataInput }) =>
+      createVideoFromFile(input.userId, input.file, input.metadata),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['feed'] })
+    },
+  })
+}
+
+export function useCreateYoutubeVideo() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: CreateYoutubeVideoInput) => createYoutubeVideo(input),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['feed'] })
     },
   })
 }

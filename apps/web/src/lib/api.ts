@@ -47,15 +47,66 @@ export async function uploadPostPhoto(userId: string, file: File): Promise<strin
 
 const POST_SELECT = `*, user:users(${USER_SELECT}), video:videos(*)`
 
-export async function createVideoFromFile(userId: string, file: File): Promise<{ id: string; path: string }> {
+export interface VideoMetadataInput {
+  title?: string | null
+  description?: string | null
+  city?: string | null
+  instruments?: string[]
+  genres?: string[]
+}
+
+export async function createVideoFromFile(
+  userId: string,
+  file: File,
+  metadata: VideoMetadataInput = {}
+): Promise<{ id: string; path: string }> {
   const supabase = createClient()
   const path = `${userId}/${Date.now()}-${file.name}`
   const { error: uploadError } = await supabase.storage.from('videos').upload(path, file)
   if (uploadError) throw uploadError
 
-  const { data, error } = await supabase.from('videos').insert({ user_id: userId, storage_path: path }).select('id').single()
+  const { data, error } = await supabase
+    .from('videos')
+    .insert({
+      user_id: userId,
+      storage_path: path,
+      video_source: 'upload',
+      title: metadata.title ?? null,
+      description: metadata.description ?? null,
+      city: metadata.city ?? null,
+      instruments: metadata.instruments ?? [],
+      genres: metadata.genres ?? [],
+    })
+    .select('id')
+    .single()
   if (error) throw error
   return { id: (data as { id: string }).id, path }
+}
+
+export interface CreateYoutubeVideoInput extends VideoMetadataInput {
+  userId: string
+  youtubeUrl: string
+}
+
+export async function createYoutubeVideo(input: CreateYoutubeVideoInput): Promise<{ id: string }> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('videos')
+    .insert({
+      user_id: input.userId,
+      storage_path: null,
+      youtube_url: input.youtubeUrl,
+      video_source: 'youtube',
+      title: input.title ?? null,
+      description: input.description ?? null,
+      city: input.city ?? null,
+      instruments: input.instruments ?? [],
+      genres: input.genres ?? [],
+    })
+    .select('id')
+    .single()
+  if (error) throw error
+  return { id: (data as { id: string }).id }
 }
 
 export interface CreatePostInput {

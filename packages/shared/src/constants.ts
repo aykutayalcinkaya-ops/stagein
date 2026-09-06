@@ -40,3 +40,7 @@ export const MAX_VIDEO_DURATION_SECONDS = 60
 export const MAX_VIDEO_SIZE_MB = 100
 export const MAX_AUDIO_NOTE_SECONDS = 60
 export const LISTING_EXPIRY_DAYS = 30
+
+// youtube.com/watch?v=ID, youtu.be/ID, youtube.com/shorts/ID, m.youtube.com/watch?v=ID
+export const YOUTUBE_URL_REGEX =
+  /^https?:\/\/(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/)|youtu\.be\/)([\w-]{11})(?:[&?#].*)?$/

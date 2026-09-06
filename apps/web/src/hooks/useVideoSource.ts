@@ -23,7 +23,7 @@ export function useVideoSource(video: Video) {
       return
     }
 
-    if (!isSupabaseConfigured) return
+    if (!isSupabaseConfigured || !video.storage_path) return
     const { data } = createClient().storage.from('videos').getPublicUrl(video.storage_path)
     setSrc(data.publicUrl)
   }, [video.hls_url, video.storage_path])

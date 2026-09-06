@@ -7,8 +7,11 @@ import { REACTION_EMOJIS, REACTION_LABELS } from '@stagein/shared'
 import { useVideoToggleReaction } from '@/hooks/usePostReactions'
 import { useToggleVideoShare } from '@/hooks/usePostShares'
 import { useVideoSource } from '@/hooks/useVideoSource'
+import { useYoutubePlayer } from '@/hooks/useYoutubePlayer'
 import { useAuthStore } from '@/stores/authStore'
+import { useFeedPlaybackStore } from '@/stores/feedPlaybackStore'
 import { sortedReactionEntries } from '@/lib/site'
+import { extractYoutubeVideoId } from '@/lib/youtube'
 import { UserAvatar } from './UserAvatar'
 import { ReactionPicker } from './ReactionPicker'
 import { ShareMenu } from './ShareMenu'
@@ -95,12 +98,19 @@ export function FeedVideo({ video }: { video: Video }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const src = useVideoSource(video)
-  const [muted, setMuted] = useState(true)
+  const muted = useFeedPlaybackStore((s) => s.muted)
+  const toggleMuted = useFeedPlaybackStore((s) => s.toggleMuted)
+  const paused = useFeedPlaybackStore((s) => s.paused)
+  const [isVisible, setIsVisible] = useState(false)
   const [progress, setProgress] = useState(0)
   const [burst, setBurst] = useState(false)
   const userId = useAuthStore((s) => s.userId)
   const { mutate: toggleReaction } = useVideoToggleReaction()
   const { mutate: toggleShare } = useToggleVideoShare()
+
+  const youtubeId = video.video_source === 'youtube' && video.youtube_url ? extractYoutubeVideoId(video.youtube_url) : null
+  const shouldPlay = isVisible && !paused
+  const youtubeContainerRef = useYoutubePlayer(youtubeId ?? '', { muted, shouldPlay: shouldPlay && !!youtubeId, onProgress: setProgress })
 
   // Ekranda yalnızca görünür video oynar.
   useEffect(() => {
@@ -108,18 +118,22 @@ export function FeedVideo({ video }: { video: Video }) {
     if (!node) return
 
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        const el = videoRef.current
-        if (!el) return
-        if (entry.isIntersecting && entry.intersectionRatio > 0.6) void el.play().catch(() => {})
-        else el.pause()
-      },
+      ([entry]) => setIsVisible(entry.isIntersecting && entry.intersectionRatio > 0.6),
       { threshold: [0, 0.6, 1] }
     )
 
     observer.observe(node)
     return () => observer.disconnect()
-  }, [src])
+  }, [])
+
+  // Native <video> oynatma/durdurmayı görünürlük + genel duraklatma durumuna göre uygular.
+  useEffect(() => {
+    if (youtubeId) return
+    const el = videoRef.current
+    if (!el) return
+    if (shouldPlay) void el.play().catch(() => {})
+    else el.pause()
+  }, [shouldPlay, src, youtubeId])
 
   function handleDoubleClick() {
     if (!userId) return
@@ -138,7 +152,13 @@ export function FeedVideo({ video }: { video: Video }) {
       className="relative h-dvh w-full shrink-0 snap-start snap-always overflow-hidden bg-black"
       onDoubleClick={handleDoubleClick}
     >
-      {src ? (
+      {youtubeId ? (
+        <>
+          <div ref={youtubeContainerRef} className="absolute inset-0 z-[1] h-full w-full" />
+          {/* YouTube iframe'i cross-origin olduğundan çift-tık gibi jestleri kendi içinde yutar; üstüne şeffaf bir katman koyup jestleri konteynıra taşıyoruz. */}
+          <div className="absolute inset-0 z-[2]" onDoubleClick={handleDoubleClick} />
+        </>
+      ) : src ? (
         <>
           <video
             aria-hidden
@@ -215,6 +235,13 @@ export function FeedVideo({ video }: { video: Video }) {
             </Link>
           ) : null}
 
+          {video.title ? (
+            <p className="mt-2.5 line-clamp-1 text-[15px] font-bold text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]">{video.title}</p>
+          ) : null}
+          {video.description ? (
+            <p className="mt-1 line-clamp-2 text-sm text-white/85 [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]">{video.description}</p>
+          ) : null}
+
           <p className="mt-3 line-clamp-2 text-sm leading-snug text-white/90 [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]">
             {[video.city ? `#${video.city.replace(/\s+/g, '')}` : null, ...video.instruments.slice(0, 2).map((i) => `#${i.replace(/\s+/g, '')}`), ...video.genres.slice(0, 1).map((g) => `#${g.replace(/\s+/g, '')}`)]
               .filter(Boolean)
@@ -271,7 +298,7 @@ export function FeedVideo({ video }: { video: Video }) {
             </IconButton>
           ) : null}
 
-          <IconButton onClick={() => setMuted((m) => !m)} label={muted ? 'Sesi aç' : 'Sesi kapat'}>
+          <IconButton onClick={toggleMuted} label={muted ? 'Sesi aç' : 'Sesi kapat'}>
             {muted ? (
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5">
                 <path d="M11 5 6 9H2v6h4l5 4V5Z" />

@@ -77,10 +77,12 @@ export interface MusicianProfile {
   is_open_to_gig: boolean
 }
 
+export type VideoSource = 'upload' | 'youtube' | 'vimeo'
+
 export interface Video {
   id: string
   user_id: string
-  storage_path: string
+  storage_path: string | null
   hls_url: string | null
   thumbnail_url: string | null
   duration: number | null
@@ -91,6 +93,10 @@ export interface Video {
   share_count: number
   view_count: number
   created_at: string
+  youtube_url?: string | null
+  video_source?: VideoSource
+  title?: string | null
+  description?: string | null
   user?: User
   liked_by_me?: boolean
   my_reaction?: ReactionType | null
