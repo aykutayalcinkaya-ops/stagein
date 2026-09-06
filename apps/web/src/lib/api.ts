@@ -4,6 +4,8 @@ import type {
   ExperienceLevel,
   Listing,
   ListingApplication,
+  MarketplaceItem,
+  MarketplaceOffer,
   MusicianProfile,
   Post,
   PostComment,
@@ -486,4 +488,51 @@ export async function updateApplicationStatus(
     .single()
   if (error) throw error
   return data as ListingApplication
+}
+
+// ---------------------------------------------------------------------------
+// Marketplace Offers
+// ---------------------------------------------------------------------------
+
+export async function createMarketplaceOffer(input: {
+  item_id: string
+  buyer_id: string
+  seller_id: string
+  offer_amount: number
+  message?: string | null
+}): Promise<MarketplaceOffer> {
+  const supabase = createClient()
+  const { data, error } = await supabase.from('marketplace_offers').insert(input).select().single()
+  if (error) throw error
+  return data as MarketplaceOffer
+}
+
+export async function getMarketplaceOffers(itemId: string): Promise<MarketplaceOffer[]> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('marketplace_offers')
+    .select(`*, buyer:buyer_id(${USER_SELECT}), seller:seller_id(${USER_SELECT})`)
+    .eq('item_id', itemId)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return (data as MarketplaceOffer[]) ?? []
+}
+
+export async function respondToMarketplaceOffer(
+  id: string,
+  status: MarketplaceOffer['status'],
+  counterAmount?: number | null
+): Promise<MarketplaceOffer> {
+  const supabase = createClient()
+  const update: Record<string, any> = { status }
+  if (counterAmount !== undefined) update.counter_amount = counterAmount
+
+  const { data, error } = await supabase
+    .from('marketplace_offers')
+    .update(update)
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data as MarketplaceOffer
 }

@@ -177,7 +177,30 @@ export interface MarketplaceItem {
   price: number | null
   city: string | null
   status: MarketplaceStatus
+  brand?: string | null
+  model?: string | null
+  condition?: 'brand_new' | 'like_new' | 'very_good' | 'good' | 'needs_repair' | null
+  category?: string | null
+  is_open_to_trade?: boolean
+  view_count?: number
   created_at: string
+  seller?: User
+}
+
+export type OfferStatus = 'pending' | 'accepted' | 'rejected' | 'countered' | 'cancelled'
+
+export interface MarketplaceOffer {
+  id: string
+  item_id: string
+  buyer_id: string
+  seller_id: string
+  offer_amount: number
+  message?: string | null
+  status: OfferStatus
+  counter_amount?: number | null
+  created_at: string
+  item?: MarketplaceItem
+  buyer?: User
   seller?: User
 }
 

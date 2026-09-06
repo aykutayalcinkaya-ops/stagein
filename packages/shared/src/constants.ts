@@ -48,6 +48,27 @@ export const MAX_VIDEO_SIZE_MB = 100
 export const MAX_AUDIO_NOTE_SECONDS = 60
 export const LISTING_EXPIRY_DAYS = 30
 
+export const MARKETPLACE_CATEGORIES = [
+  { id: 'electric-guitar', name: 'Elektro Gitar' },
+  { id: 'acoustic-guitar', name: 'Akustik & Klasik Gitar' },
+  { id: 'bass-guitar', name: 'Bas Gitar' },
+  { id: 'amps-cabs', name: 'Amfiler & Kabinler' },
+  { id: 'pedals', name: 'Efekt Pedalları & Prosesörler' },
+  { id: 'keyboards', name: 'Tuşlular & Synthesizer' },
+  { id: 'drums', name: 'Davul & Perküsyon' },
+  { id: 'studio', name: 'Stüdyo & Kayıt Ekipmanları' },
+  { id: 'strings-wind', name: 'Yaylılar & Üflemeliler' },
+  { id: 'dj-stage', name: 'DJ & Sahne Ekipmanları' },
+] as const
+
+export const CONDITION_LABELS: Record<string, string> = {
+  brand_new: 'Sıfır Ayarında',
+  like_new: 'Sıfır Gibi',
+  very_good: 'Çok İyi',
+  good: 'İyi',
+  needs_repair: 'Bakım Gerekli',
+}
+
 // youtube.com/watch?v=ID, youtu.be/ID, youtube.com/shorts/ID, m.youtube.com/watch?v=ID
 export const YOUTUBE_URL_REGEX =
   /^https?:\/\/(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/)|youtu\.be\/)([\w-]{11})(?:[&?#].*)?$/
