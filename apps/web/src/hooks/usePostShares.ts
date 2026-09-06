@@ -64,6 +64,9 @@ export function useTogglePostShare() {
       }
       queryClient.setQueryData(context.shareStatusKey, context.previousShareStatus)
     },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['wall'] })
+    },
   })
 }
 

@@ -4,3 +4,5 @@ public/sitemap*.xml
 public/robots.txt
 tsconfig.tsbuildinfo
 next-env.d.ts
+
+.vercel

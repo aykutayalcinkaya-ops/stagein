@@ -73,6 +73,9 @@ export function useTogglePostReaction() {
         queryClient.setQueryData(['wall'], context.previous)
       }
     },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['wall'] })
+    },
   })
 }
 
