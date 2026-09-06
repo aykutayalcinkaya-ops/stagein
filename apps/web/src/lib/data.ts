@@ -7,6 +7,7 @@ import type {
   MusicianProfile,
   Post,
   ProfileLink,
+  ReactionType,
   User,
   Video,
 } from '@stagein/shared'
@@ -214,14 +215,20 @@ async function attachLikedByMe(
   supabase: Awaited<ReturnType<typeof createClient>>
 ): Promise<Post[]> {
   if (!viewerId || posts.length === 0) return posts
-  const { data } = await supabase
-    .from('post_likes')
-    .select('post_id')
+  const postIds = posts.map((p) => p.id)
+  const { data: likes } = await supabase.from('post_likes').select('post_id').eq('user_id', viewerId).in('post_id', postIds)
+  const likedIds = new Set((likes ?? []).map((row) => row.post_id as string))
+
+  const { data: reactions, error: reactionsError } = await supabase
+    .from('post_reactions')
+    .select('post_id, reaction_type')
     .eq('user_id', viewerId)
-    .in(
-      'post_id',
-      posts.map((p) => p.id)
-    )
-  const likedIds = new Set((data ?? []).map((row) => row.post_id as string))
-  return posts.map((p) => ({ ...p, liked_by_me: likedIds.has(p.id) }))
+    .in('post_id', postIds)
+  const reactionsMap = new Map(
+    !reactionsError && reactions
+      ? (reactions as Array<{ post_id: string; reaction_type: ReactionType }>).map((r) => [r.post_id, r.reaction_type])
+      : []
+  )
+
+  return posts.map((p) => ({ ...p, liked_by_me: likedIds.has(p.id), my_reaction: reactionsMap.get(p.id) ?? null }))
 }
