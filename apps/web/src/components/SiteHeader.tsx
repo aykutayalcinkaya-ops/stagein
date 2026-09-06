@@ -11,6 +11,7 @@ const NAV = [
   { href: '/kesfet', label: 'Keşfet' },
   { href: '/ilanlar', label: 'İlanlar' },
   { href: '/pazar', label: 'Pazar' },
+  { href: '/freelance', label: 'Freelance' },
 ]
 
 export function SiteHeader() {
