@@ -11,6 +11,7 @@ import { cn } from './ui'
 
 interface CommentThreadProps {
   comment: PostComment
+  postId: string
   isPostOwner: boolean
   /** Rozet için: bu yorumun yazarı gönderi sahibiyle aynı mı — verilmezse rozet gösterilmez. */
   postUserId?: string
@@ -67,7 +68,7 @@ function ReplyRow({
   )
 }
 
-export function CommentThread({ comment, isPostOwner, postUserId, onDelete, onReply, compact }: CommentThreadProps) {
+export function CommentThread({ comment, postId, isPostOwner, postUserId, onDelete, onReply, compact }: CommentThreadProps) {
   const userId = useAuthStore((s) => s.userId)
   const [showReplies, setShowReplies] = useState(false)
   const [replyBody, setReplyBody] = useState('')
@@ -87,7 +88,7 @@ export function CommentThread({ comment, isPostOwner, postUserId, onDelete, onRe
     const body = replyBody.trim()
     if (!body) return
     addReply(
-      { commentId: comment.id, body },
+      { commentId: comment.id, postId, body },
       {
         onSuccess: () => {
           setReplyBody('')
@@ -154,7 +155,7 @@ export function CommentThread({ comment, isPostOwner, postUserId, onDelete, onRe
                   reply={reply}
                   isPostOwner={isPostOwner}
                   postUserId={postUserId}
-                  onDelete={() => removeReply({ replyId: reply.id, commentId: comment.id })}
+                  onDelete={() => removeReply({ replyId: reply.id, commentId: comment.id, postId })}
                 />
               ))
             )}

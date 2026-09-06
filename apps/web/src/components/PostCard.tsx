@@ -184,6 +184,7 @@ export function PostCard({ post }: { post: Post }) {
             <CommentThread
               key={comment.id}
               comment={comment}
+              postId={post.id}
               isPostOwner={isOwner}
               postUserId={post.user_id}
               compact
