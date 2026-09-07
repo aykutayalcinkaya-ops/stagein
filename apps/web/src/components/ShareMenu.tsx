@@ -128,7 +128,7 @@ export function ShareMenu({ postId, videoId, onShareToWall, onSendMessage, share
         </button>
       )}
 
-      {variant === 'icon' && shareCount !== undefined ? (
+      {variant === 'icon' && shareCount ? (
         <span className="text-xs font-semibold [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]">{shareCount}</span>
       ) : null}
 

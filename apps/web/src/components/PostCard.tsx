@@ -7,8 +7,7 @@ import * as Dialog from '@radix-ui/react-dialog'
 import { AnimatePresence, motion } from 'motion/react'
 import { Flag, ImageOff, Link2, MessageCircle, MoreHorizontal, Pencil, Play, Trash2, Video } from 'lucide-react'
 import type { Post, PostReportReason, ReactionType } from '@stagein/shared'
-import { REACTION_EMOJIS } from '@stagein/shared'
-import { formatRelative, sortedReactionEntries, sumReactions, SITE_URL } from '@/lib/site'
+import { formatRelative, sumReactions, SITE_URL } from '@/lib/site'
 import { useAuthStore } from '@/stores/authStore'
 import { useAddComment, useDeleteComment, useDeletePost, useReportPost, useUpdatePost } from '@/hooks/useWall'
 import { useTogglePostReaction } from '@/hooks/usePostReactions'
@@ -268,7 +267,6 @@ export function PostCard({ post }: { post: Post }) {
     )
   }
 
-  const reactionEntries = sortedReactionEntries(post.reactions)
   const totalReactions = sumReactions(post.reactions)
 
   return (
@@ -373,17 +371,6 @@ export function PostCard({ post }: { post: Post }) {
 
       {post.video ? (
         <AutoplayPostVideo videoId={post.video.id} thumbnailUrl={post.video.thumbnail_url} video={post.video} />
-      ) : null}
-
-      {reactionEntries.length > 0 ? (
-        <div className="mt-3 flex items-center gap-2 text-xs text-muted">
-          {reactionEntries.map(([reaction, count]) => (
-            <span key={reaction} className="flex items-center gap-1">
-              <span>{REACTION_EMOJIS[reaction]}</span>
-              <span>{count}</span>
-            </span>
-          ))}
-        </div>
       ) : null}
 
       <footer className="mt-3 flex items-center gap-5 border-t border-border pt-3 text-sm">
