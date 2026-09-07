@@ -1,9 +1,27 @@
 'use client';
 
-import { useState } from 'react';
-import { Metadata } from 'next';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { motion } from 'motion/react';
+import { Package, Star, Crown } from 'lucide-react';
+import { FREELANCE_CATEGORIES } from '@stagein/shared';
+import { Button } from '@/components/ui';
+import { useCreateFreelanceGig } from '@/hooks/useFreelance';
+import { useAuthStore } from '@/stores/authStore';
+
+const inputClass =
+  'w-full rounded-lg border border-border bg-surface px-4 py-2 text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary';
 
 export default function NewGigPage() {
+  const router = useRouter();
+  const userId = useAuthStore((s) => s.userId);
+  const isAuthLoading = useAuthStore((s) => s.isLoading);
+  const { mutateAsync: createFreelanceGig, isPending, error } = useCreateFreelanceGig();
+
+  useEffect(() => {
+    if (!isAuthLoading && userId === null) router.replace('/giris');
+  }, [isAuthLoading, userId, router]);
+
   const [formData, setFormData] = useState({
     category: '',
     title: '',
@@ -20,17 +38,7 @@ export default function NewGigPage() {
     premiumRevisions: 999,
   });
 
-  const categories = [
-    { id: 'mix-mastering', name: 'Mix & Mastering' },
-    { id: 'beat-production', name: 'Müzik Prodüksiyonu & Beste' },
-    { id: 'session-musician', name: 'Enstrüman & Session Kayıt' },
-    { id: 'voiceover', name: 'Seslendirme & Dublaj' },
-    { id: 'songwriting', name: 'Şarkı Sözü & Beste' },
-    { id: 'audio-editing', name: 'Ses Düzenleme & Restorasyon' },
-    { id: 'lessons', name: 'Müzik Dersi & Danışmanlık' },
-  ];
-
-  const handleChange = (e: any) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -38,21 +46,57 @@ export default function NewGigPage() {
     }));
   };
 
-  const handleSubmit = (e: any) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log('Form gönderiliyor:', formData);
-    alert('İlan oluşturma işlemi devam edecek.');
+    if (!userId) return;
+
+    const gig = await createFreelanceGig({
+      seller_id: userId,
+      category_id: formData.category,
+      title: formData.title,
+      description: formData.description,
+      requirements: formData.requirements || null,
+      packages: [
+        {
+          tier: 'basic',
+          title: 'Başlangıç Paketi',
+          price: Number(formData.basicPrice),
+          delivery_days: Number(formData.basicDays),
+          revisions_count: Number(formData.basicRevisions),
+        },
+        {
+          tier: 'standard',
+          title: 'Standart Paket',
+          price: Number(formData.standardPrice),
+          delivery_days: Number(formData.standardDays),
+          revisions_count: Number(formData.standardRevisions),
+        },
+        {
+          tier: 'premium',
+          title: 'Premium Paket',
+          price: Number(formData.premiumPrice),
+          delivery_days: Number(formData.premiumDays),
+          revisions_count: Number(formData.premiumRevisions),
+        },
+      ],
+    });
+    router.push(`/freelance/${gig.id}`);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
-      <div className="max-w-3xl mx-auto">
-        <h1 className="text-4xl font-bold text-gray-900 mb-8">Yeni Hizmet İlanı Oluştur</h1>
+    <div className="min-h-screen bg-dark px-4 py-12">
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+        className="mx-auto max-w-3xl"
+      >
+        <h1 className="mb-8 text-4xl font-bold text-text">Yeni Hizmet İlanı Oluştur</h1>
 
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Kategori */}
-          <div className="bg-white p-6 rounded-lg border border-gray-200">
-            <label className="block text-lg font-bold text-gray-900 mb-3">
+          <div className="rounded-lg border border-border bg-card p-6">
+            <label className="mb-3 block text-lg font-bold text-text">
               Kategori Seç
             </label>
             <select
@@ -60,10 +104,10 @@ export default function NewGigPage() {
               value={formData.category}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
             >
               <option value="">-- Kategori Seç --</option>
-              {categories.map((cat) => (
+              {FREELANCE_CATEGORIES.map((cat) => (
                 <option key={cat.id} value={cat.id}>
                   {cat.name}
                 </option>
@@ -72,27 +116,27 @@ export default function NewGigPage() {
           </div>
 
           {/* İlan Başlığı */}
-          <div className="bg-white p-6 rounded-lg border border-gray-200">
-            <label className="block text-lg font-bold text-gray-900 mb-3">
+          <div className="rounded-lg border border-border bg-card p-6">
+            <label className="mb-3 block text-lg font-bold text-text">
               İlan Başlığı
             </label>
-            <p className="text-sm text-gray-600 mb-3">
-              Format: "Ben, [hizmetin] yapabilirim."
+            <p className="mb-3 text-sm text-text-secondary">
+              Format: &quot;Ben, [hizmetin] yapabilirim.&quot;
             </p>
             <input
               type="text"
               name="title"
               value={formData.title}
               onChange={handleChange}
-              placeholder="Ben, şarkınızın profesyonel mix & mastering işlemlerini yapabilirim."
+              placeholder="Ben, şarkınızın profesyonel mix &amp; mastering işlemlerini yapabilirim."
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
             />
           </div>
 
           {/* Açıklama */}
-          <div className="bg-white p-6 rounded-lg border border-gray-200">
-            <label className="block text-lg font-bold text-gray-900 mb-3">
+          <div className="rounded-lg border border-border bg-card p-6">
+            <label className="mb-3 block text-lg font-bold text-text">
               Detaylı Açıklama
             </label>
             <textarea
@@ -102,13 +146,13 @@ export default function NewGigPage() {
               placeholder="Hizmetinizin detaylarını, özellikleri ve deneyiminizi yazın..."
               required
               rows={6}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
             />
           </div>
 
           {/* Gereksinimler */}
-          <div className="bg-white p-6 rounded-lg border border-gray-200">
-            <label className="block text-lg font-bold text-gray-900 mb-3">
+          <div className="rounded-lg border border-border bg-card p-6">
+            <label className="mb-3 block text-lg font-bold text-text">
               Müşteriden Istenecekler
             </label>
             <textarea
@@ -117,20 +161,23 @@ export default function NewGigPage() {
               onChange={handleChange}
               placeholder="Örn: Ses dosyalarını WAV formatında, 44.1kHz örnekleme oranında gönderin..."
               rows={4}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
             />
           </div>
 
           {/* 3 Kademeli Paketler */}
-          <div className="bg-white p-6 rounded-lg border border-gray-200">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">3 Kademeli Paketler</h2>
+          <div className="rounded-lg border border-border bg-card p-6">
+            <h2 className="mb-6 text-2xl font-bold text-text">3 Kademeli Paketler</h2>
 
             {/* Başlangıç Paketi */}
-            <div className="mb-8 p-4 bg-blue-50 rounded-lg">
-              <h3 className="font-bold text-lg text-gray-900 mb-4">📦 Başlangıç Paketi</h3>
+            <div className="mb-8 rounded-lg bg-primary/10 p-4">
+              <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-text">
+                <Package className="h-5 w-5 text-primary" strokeWidth={1.8} aria-hidden="true" />
+                Başlangıç Paketi
+              </h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="mb-1 block text-sm font-medium text-text-secondary">
                     Fiyat (₺)
                   </label>
                   <input
@@ -139,11 +186,11 @@ export default function NewGigPage() {
                     value={formData.basicPrice}
                     onChange={handleChange}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    className={inputClass}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="mb-1 block text-sm font-medium text-text-secondary">
                     Teslimat (gün)
                   </label>
                   <input
@@ -151,18 +198,21 @@ export default function NewGigPage() {
                     name="basicDays"
                     value={formData.basicDays}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    className={inputClass}
                   />
                 </div>
               </div>
             </div>
 
             {/* Standart Paketi */}
-            <div className="mb-8 p-4 bg-green-50 rounded-lg">
-              <h3 className="font-bold text-lg text-gray-900 mb-4">⭐ Standart Paketi</h3>
+            <div className="mb-8 rounded-lg bg-emerald-500/10 p-4">
+              <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-text">
+                <Star className="h-5 w-5 text-emerald-400" strokeWidth={1.8} aria-hidden="true" />
+                Standart Paketi
+              </h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="mb-1 block text-sm font-medium text-text-secondary">
                     Fiyat (₺)
                   </label>
                   <input
@@ -171,11 +221,11 @@ export default function NewGigPage() {
                     value={formData.standardPrice}
                     onChange={handleChange}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    className={inputClass}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="mb-1 block text-sm font-medium text-text-secondary">
                     Teslimat (gün)
                   </label>
                   <input
@@ -183,18 +233,21 @@ export default function NewGigPage() {
                     name="standardDays"
                     value={formData.standardDays}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    className={inputClass}
                   />
                 </div>
               </div>
             </div>
 
             {/* Premium Paketi */}
-            <div className="p-4 bg-purple-50 rounded-lg">
-              <h3 className="font-bold text-lg text-gray-900 mb-4">👑 Premium Paketi</h3>
+            <div className="rounded-lg bg-accent/10 p-4">
+              <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-text">
+                <Crown className="h-5 w-5 text-accent" strokeWidth={1.8} aria-hidden="true" />
+                Premium Paketi
+              </h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="mb-1 block text-sm font-medium text-text-secondary">
                     Fiyat (₺)
                   </label>
                   <input
@@ -203,11 +256,11 @@ export default function NewGigPage() {
                     value={formData.premiumPrice}
                     onChange={handleChange}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    className={inputClass}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="mb-1 block text-sm font-medium text-text-secondary">
                     Teslimat (gün)
                   </label>
                   <input
@@ -215,31 +268,30 @@ export default function NewGigPage() {
                     name="premiumDays"
                     value={formData.premiumDays}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    className={inputClass}
                   />
                 </div>
               </div>
             </div>
           </div>
 
+          {error ? (
+            <p className="text-sm text-red-400">
+              {error instanceof Error ? error.message : 'İlan oluşturulamadı.'} Bilgileri kontrol edip tekrar dene.
+            </p>
+          ) : null}
+
           {/* Submit */}
           <div className="flex gap-4">
-            <button
-              type="submit"
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition"
-            >
-              İlan Oluştur
-            </button>
-            <button
-              type="button"
-              onClick={() => window.history.back()}
-              className="flex-1 border-2 border-gray-300 text-gray-700 hover:bg-gray-50 font-bold py-3 px-6 rounded-lg transition"
-            >
+            <Button type="submit" variant="primary" disabled={isPending || !userId} className="flex-1">
+              {isPending ? 'Oluşturuluyor…' : 'İlan Oluştur'}
+            </Button>
+            <Button type="button" variant="secondary" className="flex-1" onClick={() => router.back()}>
               İptal
-            </button>
+            </Button>
           </div>
         </form>
-      </div>
+      </motion.div>
     </div>
   );
 }

@@ -2,6 +2,11 @@
 
 import type {
   ExperienceLevel,
+  FreelanceGig,
+  FreelanceOrder,
+  FreelanceOrderStatus,
+  FreelancePackage,
+  FreelanceReview,
   Listing,
   ListingApplication,
   MarketplaceItem,
@@ -10,6 +15,8 @@ import type {
   Post,
   PostComment,
   PostCommentReply,
+  PostReport,
+  PostReportReason,
   PostShare,
   ProfileLink,
   ReactionType,
@@ -146,17 +153,6 @@ export async function createPost(input: CreatePostInput): Promise<Post> {
   }
 }
 
-export async function togglePostLike(postId: string, userId: string, like: boolean): Promise<void> {
-  const supabase = createClient()
-  if (like) {
-    const { error } = await supabase.from('post_likes').insert({ post_id: postId, user_id: userId })
-    if (error) throw error
-  } else {
-    const { error } = await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', userId)
-    if (error) throw error
-  }
-}
-
 export async function addComment(postId: string, userId: string, body: string): Promise<PostComment> {
   const supabase = createClient()
   const { data, error } = await supabase
@@ -183,6 +179,36 @@ export async function deletePost(postId: string): Promise<void> {
   const supabase = createClient()
   const { error } = await supabase.from('posts').delete().eq('id', postId)
   if (error) throw error
+}
+
+export async function updatePost(postId: string, body: string): Promise<Post> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('posts')
+    .update({ body })
+    .eq('id', postId)
+    .select(POST_SELECT)
+    .single()
+  if (error) throw error
+  return data as Post
+}
+
+/**
+ * Bir gönderiyi şikayet eder. Gerçek backend: `029_post_updates_and_reports.sql`
+ * migration'ıyla eklenen `post_reports` tablosu + RLS (reporter yalnızca
+ * kendi şikayetini oluşturabilir/görebilir). Moderasyon/inceleme paneli bu
+ * görevin kapsamı dışında — satırlar tabloda birikir, henüz okuyan bir admin
+ * arayüzü yok.
+ */
+export async function reportPost(postId: string, reporterId: string, reason: PostReportReason): Promise<PostReport> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('post_reports')
+    .insert({ post_id: postId, reporter_id: reporterId, reason })
+    .select('*')
+    .single()
+  if (error) throw error
+  return data as PostReport
 }
 
 export async function deletePostComment(commentId: string): Promise<void> {
@@ -417,6 +443,7 @@ export async function hasUserSharedVideo(videoId: string, userId: string): Promi
 // ---------------------------------------------------------------------------
 
 export async function createListing(input: {
+  user_id: string
   title: string
   type: Listing['type']
   description: string
@@ -524,7 +551,7 @@ export async function respondToMarketplaceOffer(
   counterAmount?: number | null
 ): Promise<MarketplaceOffer> {
   const supabase = createClient()
-  const update: Record<string, any> = { status }
+  const update: Partial<Pick<MarketplaceOffer, 'status' | 'counter_amount'>> = { status }
   if (counterAmount !== undefined) update.counter_amount = counterAmount
 
   const { data, error } = await supabase
@@ -535,4 +562,204 @@ export async function respondToMarketplaceOffer(
     .single()
   if (error) throw error
   return data as MarketplaceOffer
+}
+
+// ---------------------------------------------------------------------------
+// Marketplace Items
+// ---------------------------------------------------------------------------
+
+export interface CreateMarketplaceItemInput {
+  seller_id: string
+  title: string
+  description: string
+  photos: string[]
+  price: number
+  city: string
+  brand?: string | null
+  model?: string | null
+  condition: NonNullable<MarketplaceItem['condition']>
+  category: string
+  is_open_to_trade: boolean
+}
+
+export async function uploadMarketplacePhoto(userId: string, file: File): Promise<string> {
+  const supabase = createClient()
+  const path = `${userId}/${Date.now()}-${file.name}`
+  const { error } = await supabase.storage.from('marketplace-photos').upload(path, file)
+  if (error) throw error
+  return supabase.storage.from('marketplace-photos').getPublicUrl(path).data.publicUrl
+}
+
+export async function createMarketplaceItem(input: CreateMarketplaceItemInput): Promise<MarketplaceItem> {
+  const supabase = createClient()
+  const { data, error } = await supabase.from('marketplace_items').insert(input).select().single()
+  if (error) throw error
+  return data as MarketplaceItem
+}
+
+export async function getMarketplaceItem(id: string): Promise<MarketplaceItem | null> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('marketplace_items')
+    .select(`*, seller:seller_id(${USER_SELECT})`)
+    .eq('id', id)
+    .maybeSingle()
+  if (error) throw error
+  return (data as MarketplaceItem) ?? null
+}
+
+// ---------------------------------------------------------------------------
+// Freelance gigs, packages & orders
+// ---------------------------------------------------------------------------
+
+const GIG_SELECT = `*, seller:seller_id(${USER_SELECT}), packages:freelance_packages(*)`
+
+export async function getFreelanceGig(id: string): Promise<FreelanceGig | null> {
+  const supabase = createClient()
+  const { data, error } = await supabase.from('freelance_gigs').select(GIG_SELECT).eq('id', id).maybeSingle()
+  if (error) throw error
+  return (data as FreelanceGig) ?? null
+}
+
+export async function getFreelanceGigReviews(gigId: string): Promise<FreelanceReview[]> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('freelance_reviews')
+    .select(`*, buyer:buyer_id(${USER_SELECT})`)
+    .eq('gig_id', gigId)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return (data ?? []) as FreelanceReview[]
+}
+
+export interface CreateFreelanceGigInput {
+  seller_id: string
+  category_id: string
+  title: string
+  description: string
+  requirements: string | null
+  packages: {
+    tier: FreelancePackage['tier']
+    title: string
+    price: number
+    delivery_days: number
+    revisions_count: number
+  }[]
+}
+
+export async function createFreelanceGig(input: CreateFreelanceGigInput): Promise<FreelanceGig> {
+  const supabase = createClient()
+  const { data: gig, error: gigError } = await supabase
+    .from('freelance_gigs')
+    .insert({
+      seller_id: input.seller_id,
+      category_id: input.category_id,
+      title: input.title,
+      description: input.description,
+      requirements: input.requirements,
+    })
+    .select()
+    .single()
+  if (gigError) throw gigError
+
+  const gigId = (gig as { id: string }).id
+  const packageRows = input.packages.map((pkg) => ({
+    gig_id: gigId,
+    tier: pkg.tier,
+    title: pkg.title,
+    description: pkg.title,
+    price: pkg.price,
+    delivery_days: pkg.delivery_days,
+    revisions_count: pkg.revisions_count,
+  }))
+
+  const { error: packagesError } = await supabase.from('freelance_packages').insert(packageRows)
+  if (packagesError) {
+    await supabase.from('freelance_gigs').delete().eq('id', gigId)
+    throw packagesError
+  }
+
+  return { ...(gig as FreelanceGig) }
+}
+
+export async function createFreelanceOrder(input: {
+  gig_id: string
+  package_id: string
+  buyer_id: string
+  seller_id: string
+  price: number
+}): Promise<FreelanceOrder> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('freelance_orders')
+    .insert({ ...input, status: 'requirements_pending' as FreelanceOrderStatus })
+    .select()
+    .single()
+  if (error) throw error
+  return data as FreelanceOrder
+}
+
+export async function getFreelanceOrder(id: string): Promise<FreelanceOrder | null> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('freelance_orders')
+    .select(
+      `*, gig:gig_id(*), package:package_id(*), buyer:buyer_id(${USER_SELECT}), seller:seller_id(${USER_SELECT})`
+    )
+    .eq('id', id)
+    .maybeSingle()
+  if (error) throw error
+  return (data as FreelanceOrder) ?? null
+}
+
+export async function submitOrderRequirements(orderId: string, requirements: string): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('freelance_orders')
+    .update({ requirements_submitted: requirements, status: 'in_progress' as FreelanceOrderStatus })
+    .eq('id', orderId)
+  if (error) throw error
+}
+
+export async function requestOrderRevision(orderId: string, note: string | null): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('freelance_orders')
+    .update({ delivery_note: note, status: 'revision_requested' as FreelanceOrderStatus })
+    .eq('id', orderId)
+  if (error) throw error
+}
+
+export async function completeOrder(orderId: string): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('freelance_orders')
+    .update({ status: 'completed' as FreelanceOrderStatus })
+    .eq('id', orderId)
+  if (error) throw error
+}
+
+// ---------------------------------------------------------------------------
+// Account deletion
+// ---------------------------------------------------------------------------
+
+/**
+ * Kullanıcının kendi hesabını kalıcı olarak silmesini tetikler.
+ *
+ * NOT (2026-09-06): Sunucu tarafında bu işi yapan bir Postgres fonksiyonu /
+ * RLS-safe RPC (`delete_user_account` ya da benzeri) HENÜZ YOK — repo genelinde
+ * arandı, tek mevcut RPC `increment_view_count`. Bu fonksiyon best-effort bir
+ * çağrı yapar: RPC sunucuda tanımlı değilse Supabase bir hata döner, bu hata
+ * olduğu gibi çağırana fırlatılır (sahte bir "başarılı" durumu asla üretilmez).
+ * RPC gerçekten var olup başarılı dönerse oturum kapatılır.
+ *
+ * Gerçek kullanıcı verisi silme akışının canlıya çıkması için bu RPC'nin bir
+ * migration ile (kullanıcının kendi satırlarını — posts/videos/messages/
+ * listings/vb. — RLS'e uygun şekilde silecek biçimde) eklenmesi gerekiyor.
+ */
+export async function deleteOwnAccount(): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase.rpc('delete_user_account')
+  if (error) throw error
+  await supabase.auth.signOut()
 }

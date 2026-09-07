@@ -13,6 +13,13 @@ interface ReactionPickerProps {
   currentReaction: ReactionType | null
   isLoading?: boolean
   onSelect: (reaction: ReactionType) => void
+  /**
+   * Toplam reaksiyon sayısı — verilirse tetikleyici buton, Yorum/Paylaş
+   * sayaçlarıyla aynı "ikon + sayı" düzenini kullanır (sayı > 0 ise sayıyı,
+   * yoksa "Beğen" etiketini gösterir). Opsiyonel: vermeyen çağıranlarda
+   * (ör. `FeedVideo.tsx`) görünüm hiç değişmez.
+   */
+  totalCount?: number
 }
 
 /**
@@ -21,7 +28,7 @@ interface ReactionPickerProps {
  * tıklamak — kaldırma davranışı üst bileşende (onSelect çağrısına göre
  * mevcut reaksiyonla karşılaştırarak) yönetilir.
  */
-export function ReactionPicker({ postId, videoId, currentReaction, isLoading, onSelect }: ReactionPickerProps) {
+export function ReactionPicker({ postId, videoId, currentReaction, isLoading, onSelect, totalCount }: ReactionPickerProps) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
 
@@ -73,6 +80,7 @@ export function ReactionPicker({ postId, videoId, currentReaction, isLoading, on
             <path d="M12 21s-6.7-4.3-9.3-8.1C.8 10 1.4 6.4 4.4 4.8c2.1-1.1 4.6-.6 6.1 1.2.4.5.7.9 1.5.9.8 0 1.1-.4 1.5-.9 1.5-1.8 4-2.3 6.1-1.2 3 1.6 3.6 5.2 1.7 8.1C18.7 16.7 12 21 12 21Z" />
           </svg>
         )}
+        {totalCount !== undefined ? (totalCount > 0 ? totalCount : 'Beğen') : null}
       </button>
 
       {open ? (

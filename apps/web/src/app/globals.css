@@ -1,5 +1,22 @@
 @import "tailwindcss";
 
+/*
+ * Tema mimarisi notu (Task F1 — dark-mode token audit):
+ * Bu uygulama TEK ve SABİT bir koyu tema kullanır (`color-scheme: dark`,
+ * aşağıda yalnızca koyu değerler tanımlı, açık/light tema yok). Kod
+ * tabanında hiçbir yerde Tailwind'in `dark:` varyant öneki kullanılmıyor
+ * (repo geneli grep ile doğrulandı) ve burada bir `@custom-variant dark`
+ * tanımı da yok — yani `dark:bg-...` gibi sınıflar şu an inert (hiçbir
+ * zaman tetiklenmez, çünkü karşılaştıracak bir "light" durum yok).
+ * Kartlar/inputlar/menüler zaten `--color-card`, `--color-border`,
+ * `--color-surface` gibi CSS değişkenleriyle her zaman koyu render olur.
+ * Yeni bileşen eklerken `dark:` öneki yerine bu token'ları (`bg-card`,
+ * `border-border`, `text-text` vb.) kullanın. Gerçek bir açık/koyu tema
+ * anahtarı eklenirse burada `@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));`
+ * gibi bir tanım ve karşılık gelen `:root[data-theme=light]` token seti
+ * gerekecektir — bu görev kapsamında dosya yeniden yapılandırılmadı.
+ */
+
 @theme {
   --color-dark: #09080A;
   --color-surface: #141217;

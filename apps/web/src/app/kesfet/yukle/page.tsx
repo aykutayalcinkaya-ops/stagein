@@ -7,6 +7,7 @@ import { useCreateYoutubeVideo, useUploadVideo } from '@/hooks/useVideoFeed'
 import { useAuthStore } from '@/stores/authStore'
 import { isValidYoutubeUrl, extractYoutubeVideoId, getYoutubeThumbnail } from '@/lib/youtube'
 import { Button, Chip } from '@/components/ui'
+import { BackButton } from '@/components/BackButton'
 
 type Tab = 'dosya' | 'youtube'
 
@@ -119,6 +120,10 @@ export default function VideoYuklePage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-12">
+      <div className="mb-4">
+        <BackButton />
+      </div>
+
       <h1 className="text-3xl font-black tracking-tight">Video Ekle</h1>
       <p className="mt-2 text-sm text-muted">Dikey performans videonu Keşfet akışına ekle.</p>
 

@@ -69,6 +69,30 @@ export const CONDITION_LABELS: Record<string, string> = {
   needs_repair: 'Bakım Gerekli',
 }
 
+export const FREELANCE_CATEGORIES = [
+  { id: 'mix-mastering', name: 'Mix & Mastering' },
+  { id: 'beat-production', name: 'Müzik Prodüksiyonu & Beste' },
+  { id: 'session-musician', name: 'Enstrüman & Session Kayıt' },
+  { id: 'voiceover', name: 'Seslendirme & Dublaj' },
+  { id: 'songwriting', name: 'Şarkı Sözü & Beste' },
+  { id: 'audio-editing', name: 'Ses Düzenleme & Restorasyon' },
+  { id: 'lessons', name: 'Müzik Dersi & Danışmanlık' },
+] as const
+
+export const FREELANCE_ORDER_STATUS_LABELS: Record<string, string> = {
+  requirements_pending: 'Gereksinimler Bekleniyor',
+  in_progress: 'İşlem Devam Ediyor',
+  delivered: 'Teslim Edildi',
+  revision_requested: 'Revizyon İstenmiş',
+  completed: 'Tamamlandı',
+  cancelled: 'İptal Edilmiş',
+  disputed: 'Uyuşmazlık',
+}
+
 // youtube.com/watch?v=ID, youtu.be/ID, youtube.com/shorts/ID, m.youtube.com/watch?v=ID
+// - protokol (https://) opsiyonel: kullanıcı adres çubuğundan "https://" olmadan yapıştırabilir.
+// - "i" bayrağı: alan adı büyük/küçük harf duyarsız (YouTube.com, HTTPS://... da geçerli); video ID'si zaten
+//   [\w-] karakter sınıfıyla her iki harf durumunu da kapsıyor, bu yüzden ID eşleşmesini bozmaz.
+// - sondaki [/&?#].* grubu: ?si=, &list=, &t=, #fragment ve sondaki "/" (paylaşım linklerinde görülen) hepsini yutar.
 export const YOUTUBE_URL_REGEX =
-  /^https?:\/\/(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/)|youtu\.be\/)([\w-]{11})(?:[&?#].*)?$/
+  /^(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/)|youtu\.be\/)([\w-]{11})(?:[/&?#].*)?$/i

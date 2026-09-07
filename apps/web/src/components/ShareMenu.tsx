@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { Share2 } from 'lucide-react'
 import { SITE_URL } from '@/lib/site'
 import { cn } from './ui'
 
@@ -9,6 +10,16 @@ interface ShareMenuProps {
   videoId?: string
   onShareToWall?: (caption?: string) => void
   onSendMessage?: () => void
+  /** Toplam paylaşım sayısı. Verilirse `text` varyantında "Paylaş" yerine, `icon` varyantında ikonun altında gösterilir. */
+  shareCount?: number
+  /**
+   * `text` (varsayılan): ikon + "Paylaş"/sayı metin butonu — Anasayfa/PostCard'ta kullanılır.
+   * `icon`: Keşfet tam ekran video aksiyon çubuğundaki diğer dairesel
+   * `backdrop-blur-md` ikon butonlarıyla (Cevaplar/Ses/Mesaj) görsel tutarlılık
+   * için yalnızca ikon içeren dairesel bir buton — sayaç, ikonun altında ayrı
+   * bir etiket olarak gösterilir (bkz. `FeedVideo.tsx`'teki `IconButton`).
+   */
+  variant?: 'text' | 'icon'
 }
 
 type Panel = 'menu' | 'caption'
@@ -17,7 +28,7 @@ type Panel = 'menu' | 'caption'
  * Paylaşım menüsü: duvara paylaş, mesaj olarak gönder, bağlantı kopyala.
  * Masaüstünde açılır menü, mobilde tam ekran panel olarak gösterilir.
  */
-export function ShareMenu({ postId, videoId, onShareToWall, onSendMessage }: ShareMenuProps) {
+export function ShareMenu({ postId, videoId, onShareToWall, onSendMessage, shareCount, variant = 'text' }: ShareMenuProps) {
   const [open, setOpen] = useState(false)
   const [panel, setPanel] = useState<Panel>('menu')
   const [caption, setCaption] = useState('')
@@ -86,21 +97,39 @@ export function ShareMenu({ postId, videoId, onShareToWall, onSendMessage }: Sha
   }
 
   return (
-    <div ref={rootRef} className="relative inline-block" data-post-id={postId} data-video-id={videoId}>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-haspopup="true"
-        aria-expanded={open}
-        className="flex items-center gap-1.5 rounded-full px-2 py-1 text-sm font-medium text-muted transition-colors duration-150 hover:text-white"
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-4 w-4">
-          <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7" />
-          <path d="M16 6l-4-4-4 4" />
-          <path d="M12 2v14" />
-        </svg>
-        Paylaş
-      </button>
+    <div
+      ref={rootRef}
+      className={cn('relative inline-block', variant === 'icon' && 'flex flex-col items-center gap-1 text-white')}
+      data-post-id={postId}
+      data-video-id={videoId}
+    >
+      {variant === 'icon' ? (
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-haspopup="true"
+          aria-expanded={open}
+          aria-label="Paylaş"
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-all duration-180 hover:bg-white/15 active:scale-90"
+        >
+          <Share2 className="h-5 w-5" strokeWidth={1.8} />
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-haspopup="true"
+          aria-expanded={open}
+          className="flex items-center gap-1.5 rounded-full px-2 py-1 text-sm font-medium text-muted transition-colors duration-150 hover:text-white"
+        >
+          <Share2 className="h-4 w-4" strokeWidth={1.8} />
+          {shareCount && shareCount > 0 ? shareCount : 'Paylaş'}
+        </button>
+      )}
+
+      {variant === 'icon' && shareCount !== undefined ? (
+        <span className="text-xs font-semibold [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]">{shareCount}</span>
+      ) : null}
 
       {open ? (
         <>

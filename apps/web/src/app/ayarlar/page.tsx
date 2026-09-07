@@ -2,16 +2,26 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import * as Dialog from '@radix-ui/react-dialog'
+import { AnimatePresence, motion } from 'motion/react'
+import { AlertTriangle, Check, X } from 'lucide-react'
 import { CITIES, GENRES, INSTRUMENTS } from '@stagein/shared'
 import type { ExperienceLevel } from '@stagein/shared'
 import { createClient } from '@/lib/supabase/client'
-import { replaceProfileLinks, uploadAvatar, upsertMusicianProfile, upsertUser } from '@/lib/api'
+import { deleteOwnAccount, replaceProfileLinks, uploadAvatar, upsertMusicianProfile, upsertUser } from '@/lib/api'
 import { EXPERIENCE_LABELS } from '@/lib/site'
-import { Button, Chip, EmptyState } from '@/components/ui'
+import { Button, Chip, EmptyState, cn } from '@/components/ui'
 import { UserAvatar } from '@/components/UserAvatar'
 import { useAuthStore } from '@/stores/authStore'
 
 const LEVELS: ExperienceLevel[] = ['beginner', 'intermediate', 'professional']
+
+type PickerKey = 'city' | 'instruments' | 'genres' | 'experience'
+
+interface PickerOption {
+  value: string
+  label: string
+}
 
 export default function AyarlarPage() {
   const router = useRouter()
@@ -41,6 +51,13 @@ export default function AyarlarPage() {
   const [newLabel, setNewLabel] = useState('')
   const [newUrl, setNewUrl] = useState('')
 
+  const [activePicker, setActivePicker] = useState<PickerKey | null>(null)
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+
   // Profile data loads asynchronously (AuthSync's fetchProfileBundle), so the useState
   // initializers above run before it arrives on first mount. Sync the form once it's in.
   useEffect(() => {
@@ -55,10 +72,6 @@ export default function AyarlarPage() {
     setLinks(profileLinks.map((l) => ({ label: l.label, url: l.url })))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.id])
-
-  function toggle(list: string[], setList: (next: string[]) => void, value: string) {
-    setList(list.includes(value) ? list.filter((v) => v !== value) : [...list, value])
-  }
 
   function addLink() {
     if (!newLabel.trim() || !newUrl.trim()) return
@@ -81,12 +94,63 @@ export default function AyarlarPage() {
     })
   }
 
+  // ---------------------------------------------------------------------
+  // Şehir / Enstrüman / Tarz / Seviye — çoklu seçim modalı
+  // ---------------------------------------------------------------------
+
+  const pickerConfig: Record<
+    PickerKey,
+    { title: string; options: PickerOption[]; selected: string[]; multiple: boolean; required: boolean }
+  > = {
+    city: {
+      title: 'Şehir',
+      options: CITIES.map((c) => ({ value: c, label: c })),
+      selected: city ? [city] : [],
+      multiple: false,
+      required: false,
+    },
+    instruments: {
+      title: 'Enstrüman',
+      options: INSTRUMENTS.map((i) => ({ value: i, label: i })),
+      selected: instruments,
+      multiple: true,
+      required: false,
+    },
+    genres: {
+      title: 'Tarz',
+      options: GENRES.map((g) => ({ value: g, label: g })),
+      selected: genres,
+      multiple: true,
+      required: false,
+    },
+    experience: {
+      title: 'Seviye',
+      options: LEVELS.map((l) => ({ value: l, label: EXPERIENCE_LABELS[l] })),
+      selected: [experience],
+      multiple: false,
+      required: true,
+    },
+  }
+
+  function applyPicker(key: PickerKey, next: string[]) {
+    if (key === 'city') setCity(next[0] ?? null)
+    else if (key === 'instruments') setInstruments(next)
+    else if (key === 'genres') setGenres(next)
+    else if (key === 'experience') setExperience((next[0] as ExperienceLevel | undefined) ?? experience)
+  }
+
+  function removeFromField(key: Exclude<PickerKey, 'experience'>, value: string) {
+    if (key === 'city') setCity((cur) => (cur === value ? null : cur))
+    else if (key === 'instruments') setInstruments((cur) => cur.filter((v) => v !== value))
+    else if (key === 'genres') setGenres((cur) => cur.filter((v) => v !== value))
+  }
+
   if (userId && !profile) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-16">
         <EmptyState
-          title="Hesabın henüz tamamlanmamış"
-          description="Profilini tamamlamak için StageIn mobil uygulamasını kullan."
+          title="Profilin yüklenemedi"
+          description="Bir şeyler ters gitti. Sayfayı yenilemeyi dene; sorun devam ederse destek ile iletişime geç."
         />
       </div>
     )
@@ -138,6 +202,28 @@ export default function AyarlarPage() {
     router.push('/')
   }
 
+  function handleDeleteDialogChange(next: boolean) {
+    setDeleteDialogOpen(next)
+    if (!next) {
+      setDeleteConfirmText('')
+      setDeleteError(null)
+    }
+  }
+
+  async function handleDeleteAccount() {
+    if (deleteConfirmText.trim() !== 'SİL') return
+    setDeleting(true)
+    setDeleteError(null)
+    try {
+      await deleteOwnAccount()
+      router.push('/')
+    } catch {
+      setDeleteError('Hesap silme işlemi şu anda kullanılamıyor, lütfen destek ile iletişime geçin.')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-12">
       <h1 className="text-3xl font-black tracking-tight">Ayarlar</h1>
@@ -170,45 +256,53 @@ export default function AyarlarPage() {
         />
       </div>
 
-      <Section title="Şehir">
-        {CITIES.map((option) => (
-          <Chip key={option} tone={city === option ? 'primary' : 'default'} className="cursor-pointer">
-            <button type="button" onClick={() => setCity(city === option ? null : option)}>
-              {option}
-            </button>
-          </Chip>
-        ))}
-      </Section>
+      <PickerField
+        title="Şehir"
+        values={city ? [{ value: city, label: city }] : []}
+        onRemove={(value) => removeFromField('city', value)}
+        onOpen={() => setActivePicker('city')}
+        placeholder="Şehir seç"
+      />
 
-      <Section title="Enstrüman">
-        {INSTRUMENTS.map((option) => (
-          <Chip key={option} tone={instruments.includes(option) ? 'primary' : 'default'} className="cursor-pointer">
-            <button type="button" onClick={() => toggle(instruments, setInstruments, option)}>
-              {option}
-            </button>
-          </Chip>
-        ))}
-      </Section>
+      <PickerField
+        title="Enstrüman"
+        values={instruments.map((i) => ({ value: i, label: i }))}
+        onRemove={(value) => removeFromField('instruments', value)}
+        onOpen={() => setActivePicker('instruments')}
+        placeholder="Enstrüman ekle"
+      />
 
-      <Section title="Tarz">
-        {GENRES.map((option) => (
-          <Chip key={option} tone={genres.includes(option) ? 'primary' : 'default'} className="cursor-pointer">
-            <button type="button" onClick={() => toggle(genres, setGenres, option)}>
-              {option}
-            </button>
-          </Chip>
-        ))}
-      </Section>
+      <PickerField
+        title="Tarz"
+        values={genres.map((g) => ({ value: g, label: g }))}
+        onRemove={(value) => removeFromField('genres', value)}
+        onOpen={() => setActivePicker('genres')}
+        placeholder="Tarz ekle"
+      />
 
-      <Section title="Seviye">
-        {LEVELS.map((option) => (
-          <Chip key={option} tone={experience === option ? 'primary' : 'default'} className="cursor-pointer">
-            <button type="button" onClick={() => setExperience(option)}>
-              {EXPERIENCE_LABELS[option]}
-            </button>
-          </Chip>
-        ))}
-      </Section>
+      <PickerField
+        title="Seviye"
+        values={[{ value: experience, label: EXPERIENCE_LABELS[experience] }]}
+        onRemove={() => {}}
+        onOpen={() => setActivePicker('experience')}
+        placeholder="Seviye seç"
+        removable={false}
+      />
+
+      {activePicker ? (
+        <FieldPickerModal
+          open
+          onOpenChange={(next) => {
+            if (!next) setActivePicker(null)
+          }}
+          title={pickerConfig[activePicker].title}
+          options={pickerConfig[activePicker].options}
+          selected={pickerConfig[activePicker].selected}
+          multiple={pickerConfig[activePicker].multiple}
+          required={pickerConfig[activePicker].required}
+          onApply={(next) => applyPicker(activePicker, next)}
+        />
+      ) : null}
 
       <div className="mt-8">
         <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">Linkler</p>
@@ -270,15 +364,367 @@ export default function AyarlarPage() {
           {saving ? 'Kaydediliyor…' : 'Kaydet'}
         </Button>
       </div>
+
+      <div className="mt-12 rounded-2xl border border-red-500/20 bg-red-500/5 p-5">
+        <p className="text-sm font-semibold text-text">Tehlikeli Bölge</p>
+        <p className="mt-1 text-sm leading-relaxed text-text-secondary">
+          Hesabını sildiğinde tüm gönderilerin, videoların, mesajların ve ilanların kalıcı olarak silinir. Bu işlem
+          geri alınamaz.
+        </p>
+        <Button
+          variant="destructive"
+          className="mt-4 px-5 py-2.5 text-sm"
+          onClick={() => setDeleteDialogOpen(true)}
+        >
+          Hesabımı Sil
+        </Button>
+      </div>
+
+      <DeleteAccountDialog
+        open={deleteDialogOpen}
+        onOpenChange={handleDeleteDialogChange}
+        confirmText={deleteConfirmText}
+        onConfirmTextChange={setDeleteConfirmText}
+        loading={deleting}
+        error={deleteError}
+        onConfirm={handleDeleteAccount}
+      />
     </div>
   )
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function PickerField({
+  title,
+  values,
+  onRemove,
+  onOpen,
+  placeholder,
+  removable = true,
+}: {
+  title: string
+  values: PickerOption[]
+  onRemove: (value: string) => void
+  onOpen: () => void
+  placeholder: string
+  removable?: boolean
+}) {
   return (
     <div className="mt-8">
-      <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">{title}</p>
-      <div className="flex flex-wrap gap-2">{children}</div>
+      <div className="mb-3 flex items-center justify-between">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted">{title}</p>
+        <motion.button
+          type="button"
+          whileTap={{ scale: 0.96 }}
+          onClick={onOpen}
+          className="text-sm font-semibold text-primary"
+        >
+          Düzenle
+        </motion.button>
+      </div>
+      {values.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {values.map((option) => (
+            <Chip key={option.value} tone="primary" className="inline-flex items-center gap-1.5">
+              {option.label}
+              {removable ? (
+                <button
+                  type="button"
+                  onClick={() => onRemove(option.value)}
+                  aria-label={`${option.label} kaldır`}
+                  className="rounded-full text-[#C6B7FF] hover:text-white"
+                >
+                  <X className="h-3 w-3" strokeWidth={2.4} />
+                </button>
+              ) : null}
+            </Chip>
+          ))}
+        </div>
+      ) : (
+        <motion.button
+          type="button"
+          whileTap={{ scale: 0.97 }}
+          onClick={onOpen}
+          className="min-h-11 rounded-lg border border-dashed border-border-strong px-4 py-2.5 text-sm text-muted transition-colors hover:border-primary/60 hover:text-text"
+        >
+          {placeholder}
+        </motion.button>
+      )}
     </div>
+  )
+}
+
+function FieldPickerModal({
+  open,
+  onOpenChange,
+  title,
+  options,
+  selected,
+  multiple,
+  required,
+  onApply,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  title: string
+  options: PickerOption[]
+  selected: string[]
+  multiple: boolean
+  required: boolean
+  onApply: (next: string[]) => void
+}) {
+  const [draft, setDraft] = useState<string[]>(selected)
+  const [query, setQuery] = useState('')
+
+  useEffect(() => {
+    if (open) {
+      setDraft(selected)
+      setQuery('')
+    }
+    // Modal her açıldığında dışarıdaki mevcut seçime göre taslağı sıfırla.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
+
+  const filtered = options.filter((option) =>
+    option.label.toLocaleLowerCase('tr-TR').includes(query.toLocaleLowerCase('tr-TR'))
+  )
+
+  function toggleOption(value: string) {
+    if (multiple) {
+      setDraft((cur) => (cur.includes(value) ? cur.filter((v) => v !== value) : [...cur, value]))
+    } else {
+      setDraft((cur) => {
+        if (cur.includes(value)) return required ? cur : []
+        return [value]
+      })
+    }
+  }
+
+  function removeChip(value: string) {
+    if (required && draft.length <= 1) return
+    setDraft((cur) => cur.filter((v) => v !== value))
+  }
+
+  function handleApply() {
+    onApply(draft)
+    onOpenChange(false)
+  }
+
+  function labelOf(value: string) {
+    return options.find((o) => o.value === value)?.label ?? value
+  }
+
+  return (
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <AnimatePresence>
+        {open ? (
+          <Dialog.Portal forceMount>
+            <Dialog.Overlay asChild forceMount>
+              <motion.div
+                className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+              />
+            </Dialog.Overlay>
+            <Dialog.Content asChild forceMount>
+              <motion.div
+                className="fixed left-1/2 top-1/2 z-[201] flex max-h-[80vh] w-[min(92vw,28rem)] -translate-x-1/2 -translate-y-1/2 flex-col rounded-2xl border border-border bg-card p-6 shadow-2xl"
+                initial={{ opacity: 0, scale: 0.94, y: 8 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.96, y: 4 }}
+                transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+              >
+                <Dialog.Close
+                  aria-label="Kapat"
+                  className="absolute right-4 top-4 flex min-h-11 min-w-11 items-center justify-center rounded-full text-muted transition-colors hover:bg-white/[0.06] hover:text-text"
+                >
+                  <X className="h-5 w-5" strokeWidth={1.8} />
+                </Dialog.Close>
+
+                <Dialog.Title className="pr-8 text-lg font-semibold text-text">{title}</Dialog.Title>
+                <Dialog.Description className="mt-1 text-sm text-text-secondary">
+                  {multiple ? 'Birden fazla seçim yapabilirsin.' : 'Bir seçim yapabilirsin.'}
+                </Dialog.Description>
+
+                {draft.length > 0 ? (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {draft.map((value) => (
+                      <span
+                        key={value}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1 text-xs font-medium text-[#C6B7FF] ring-1 ring-inset ring-primary/25"
+                      >
+                        {labelOf(value)}
+                        <button
+                          type="button"
+                          onClick={() => removeChip(value)}
+                          aria-label={`${labelOf(value)} kaldır`}
+                          className="rounded-full hover:text-white disabled:opacity-40"
+                          disabled={required && draft.length <= 1}
+                        >
+                          <X className="h-3 w-3" strokeWidth={2.4} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-4 text-sm text-muted">Henüz seçim yapılmadı.</p>
+                )}
+
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Ara…"
+                  className="mt-4 rounded-lg border border-border bg-white/[0.04] px-3 py-2 text-sm text-text outline-none placeholder:text-muted focus:border-primary"
+                />
+
+                <div className="mt-3 flex-1 overflow-y-auto rounded-lg border border-border">
+                  {filtered.length === 0 ? (
+                    <p className="p-4 text-center text-sm text-muted">Sonuç bulunamadı.</p>
+                  ) : (
+                    filtered.map((option) => {
+                      const isSelected = draft.includes(option.value)
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => toggleOption(option.value)}
+                          className={cn(
+                            'flex min-h-11 w-full items-center justify-between gap-3 border-b border-border px-4 py-2.5 text-left text-sm text-text transition-colors last:border-b-0 hover:bg-white/[0.05]',
+                            isSelected && 'bg-primary/10'
+                          )}
+                        >
+                          <span>{option.label}</span>
+                          <span
+                            className={cn(
+                              'flex h-5 w-5 shrink-0 items-center justify-center border border-border-strong',
+                              multiple ? 'rounded' : 'rounded-full',
+                              isSelected && 'border-primary bg-primary text-white'
+                            )}
+                          >
+                            {isSelected ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : null}
+                          </span>
+                        </button>
+                      )
+                    })
+                  )}
+                </div>
+
+                <div className="mt-5 flex justify-end gap-3">
+                  <Dialog.Close asChild>
+                    <Button variant="secondary" className="px-5 py-2.5 text-sm">
+                      Vazgeç
+                    </Button>
+                  </Dialog.Close>
+                  <Button type="button" variant="primary" className="px-5 py-2.5 text-sm" onClick={handleApply}>
+                    Uygula
+                  </Button>
+                </div>
+              </motion.div>
+            </Dialog.Content>
+          </Dialog.Portal>
+        ) : null}
+      </AnimatePresence>
+    </Dialog.Root>
+  )
+}
+
+function DeleteAccountDialog({
+  open,
+  onOpenChange,
+  confirmText,
+  onConfirmTextChange,
+  loading,
+  error,
+  onConfirm,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  confirmText: string
+  onConfirmTextChange: (value: string) => void
+  loading: boolean
+  error: string | null
+  onConfirm: () => void
+}) {
+  const canConfirm = confirmText.trim() === 'SİL' && !loading
+
+  return (
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <AnimatePresence>
+        {open ? (
+          <Dialog.Portal forceMount>
+            <Dialog.Overlay asChild forceMount>
+              <motion.div
+                className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+              />
+            </Dialog.Overlay>
+            <Dialog.Content asChild forceMount>
+              <motion.div
+                className="fixed left-1/2 top-1/2 z-[201] w-[min(92vw,28rem)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-card p-6 shadow-2xl"
+                initial={{ opacity: 0, scale: 0.94, y: 8 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.96, y: 4 }}
+                transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+              >
+                <Dialog.Close
+                  aria-label="Kapat"
+                  className="absolute right-4 top-4 flex min-h-11 min-w-11 items-center justify-center rounded-full text-muted transition-colors hover:bg-white/[0.06] hover:text-text"
+                >
+                  <X className="h-5 w-5" strokeWidth={1.8} />
+                </Dialog.Close>
+
+                <div className="flex items-start gap-3 pr-8">
+                  <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-500/10 text-red-400">
+                    <AlertTriangle className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
+                  </span>
+                  <div>
+                    <Dialog.Title className="text-lg font-semibold text-text">
+                      Hesabını kalıcı olarak sil
+                    </Dialog.Title>
+                    <Dialog.Description className="mt-2 text-sm leading-relaxed text-text-secondary">
+                      Bu işlem geri alınamaz. Hesabını sildiğinde tüm gönderilerin, videoların, mesajların ve
+                      ilanların kalıcı olarak silinir; hesabına ve verilerine bir daha erişemezsin.
+                    </Dialog.Description>
+                  </div>
+                </div>
+
+                <label className="mt-5 block text-sm text-text-secondary">
+                  Onaylamak için aşağıya <span className="font-semibold text-text">SİL</span> yaz
+                  <input
+                    value={confirmText}
+                    onChange={(e) => onConfirmTextChange(e.target.value)}
+                    placeholder="SİL"
+                    className="mt-2 w-full rounded-lg border border-border bg-white/[0.04] px-4 py-2.5 text-text outline-none placeholder:text-muted focus:border-red-500"
+                  />
+                </label>
+
+                {error ? <p className="mt-3 text-sm text-red-400">{error}</p> : null}
+
+                <div className="mt-6 flex justify-end gap-3">
+                  <Dialog.Close asChild>
+                    <Button variant="secondary" className="px-5 py-2.5 text-sm">
+                      Vazgeç
+                    </Button>
+                  </Dialog.Close>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    className="px-5 py-2.5 text-sm"
+                    disabled={!canConfirm}
+                    onClick={onConfirm}
+                  >
+                    {loading ? 'Siliniyor…' : 'Hesabımı kalıcı olarak sil'}
+                  </Button>
+                </div>
+              </motion.div>
+            </Dialog.Content>
+          </Dialog.Portal>
+        ) : null}
+      </AnimatePresence>
+    </Dialog.Root>
   )
 }

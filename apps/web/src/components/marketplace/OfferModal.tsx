@@ -1,6 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import * as Dialog from '@radix-ui/react-dialog';
+import { AnimatePresence, motion } from 'motion/react';
+import { X } from 'lucide-react';
+import { Button, cn } from '@/components/ui';
 
 interface OfferModalProps {
   itemId: string;
@@ -11,8 +15,11 @@ interface OfferModalProps {
   onSubmit: (amount: number, message?: string) => Promise<void>;
 }
 
+const inputClass =
+  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-text outline-none transition-colors duration-150 placeholder:text-muted focus:border-primary';
+
 export function OfferModal({
-  itemId,
+  itemId: _itemId,
   currentPrice,
   itemTitle,
   isOpen,
@@ -42,76 +49,90 @@ export function OfferModal({
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="max-w-md w-full mx-4 bg-white rounded-lg shadow-lg">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900">Teklif Ver</h2>
-          <p className="text-sm text-gray-600 mt-1 line-clamp-2">{itemTitle}</p>
-        </div>
+    <Dialog.Root open={isOpen} onOpenChange={(next) => !next && onClose()}>
+      <AnimatePresence>
+        {isOpen ? (
+          <Dialog.Portal forceMount>
+            <Dialog.Overlay asChild forceMount>
+              <motion.div
+                className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+              />
+            </Dialog.Overlay>
+            <Dialog.Content asChild forceMount>
+              <motion.div
+                className={cn(
+                  'fixed left-1/2 top-1/2 z-[201] w-[min(92vw,28rem)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-card shadow-2xl'
+                )}
+                initial={{ opacity: 0, scale: 0.94, y: 8 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.96, y: 4 }}
+                transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+              >
+                <Dialog.Close
+                  aria-label="Kapat"
+                  className="absolute right-4 top-4 flex min-h-11 min-w-11 items-center justify-center rounded-full text-muted transition-colors hover:bg-white/[0.06] hover:text-text"
+                >
+                  <X className="h-5 w-5" strokeWidth={1.8} />
+                </Dialog.Close>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Listelenmiş Fiyat
-            </label>
-            <div className="text-2xl font-bold text-gray-900">
-              ₺{currentPrice.toLocaleString('tr-TR')}
-            </div>
-          </div>
+                <div className="border-b border-border p-6 pr-12">
+                  <Dialog.Title className="text-xl font-bold text-text">Teklif Ver</Dialog.Title>
+                  <Dialog.Description className="mt-1 line-clamp-2 text-sm text-text-secondary">
+                    {itemTitle}
+                  </Dialog.Description>
+                </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Teklifiniz (₺)
-            </label>
-            <input
-              type="number"
-              value={offerAmount}
-              onChange={(e) => setOfferAmount(Number(e.target.value))}
-              min={1}
-              max={currentPrice}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg font-semibold"
-            />
-            {discount > 0 && (
-              <p className="text-sm text-green-600 mt-2">
-                Liste fiyatından %{discount} indirim
-              </p>
-            )}
-          </div>
+                <form onSubmit={handleSubmit} className="space-y-4 p-6">
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-text-secondary">Listelenmiş Fiyat</label>
+                    <div className="text-2xl font-bold text-text">₺{currentPrice.toLocaleString('tr-TR')}</div>
+                  </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Mesaj (İsteğe Bağlı)
-            </label>
-            <textarea
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Satıcıya bir mesaj yazabilirsiniz..."
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-text-secondary">Teklifiniz (₺)</label>
+                    <input
+                      type="number"
+                      value={offerAmount}
+                      onChange={(e) => setOfferAmount(Number(e.target.value))}
+                      min={1}
+                      max={currentPrice}
+                      className={cn(inputClass, 'text-lg font-semibold')}
+                    />
+                    {discount > 0 && (
+                      <p className="mt-2 text-sm text-green-400">Liste fiyatından %{discount} indirim</p>
+                    )}
+                  </div>
 
-          <div className="flex gap-2 pt-4">
-            <button
-              type="submit"
-              disabled={isSubmitting || offerAmount <= 0}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-bold py-2 px-4 rounded-lg transition"
-            >
-              {isSubmitting ? 'Gönderiliyor...' : 'Teklif Gönder'}
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 border-2 border-gray-300 text-gray-700 hover:bg-gray-50 font-bold py-2 px-4 rounded-lg transition"
-            >
-              İptal
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-text-secondary">Mesaj (İsteğe Bağlı)</label>
+                    <textarea
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      placeholder="Satıcıya bir mesaj yazabilirsiniz..."
+                      rows={3}
+                      className={inputClass}
+                    />
+                  </div>
+
+                  <div className="flex gap-2 pt-4">
+                    <Button type="submit" variant="primary" disabled={isSubmitting || offerAmount <= 0} className="flex-1">
+                      {isSubmitting ? 'Gönderiliyor...' : 'Teklif Gönder'}
+                    </Button>
+                    <Button type="button" variant="secondary" onClick={onClose} className="flex-1">
+                      İptal
+                    </Button>
+                  </div>
+                </form>
+              </motion.div>
+            </Dialog.Content>
+          </Dialog.Portal>
+        ) : null}
+      </AnimatePresence>
+    </Dialog.Root>
   );
 }

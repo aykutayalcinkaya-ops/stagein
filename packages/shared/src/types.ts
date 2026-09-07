@@ -233,10 +233,21 @@ export interface Post {
   share_count: number
   comment_count: number
   created_at: string
+  updated_at?: string | null
   user?: User
   video?: Video
   liked_by_me?: boolean
   my_reaction?: ReactionType | null
+}
+
+export type PostReportReason = 'spam' | 'harassment' | 'inappropriate' | 'other'
+
+export interface PostReport {
+  id: string
+  post_id: string
+  reporter_id: string
+  reason: PostReportReason
+  created_at: string
 }
 
 export interface PostComment {
@@ -256,4 +267,112 @@ export interface ProfileLink {
   label: string
   url: string
   position: number
+}
+
+// ---------------------------------------------------------------------------
+// Freelance (hizmet ilanları / gigs)
+// ---------------------------------------------------------------------------
+
+export type FreelanceGigStatus = 'active' | 'paused' | 'draft'
+export type FreelancePackageTier = 'basic' | 'standard' | 'premium'
+export type FreelanceOrderStatus =
+  | 'requirements_pending'
+  | 'in_progress'
+  | 'delivered'
+  | 'revision_requested'
+  | 'completed'
+  | 'cancelled'
+  | 'disputed'
+
+export interface FreelanceCategory {
+  id: string
+  name: string
+  icon: string | null
+  description: string | null
+}
+
+export interface FreelanceAudioSample {
+  title: string
+  url: string
+  duration: number
+}
+
+export interface FreelanceFaqItem {
+  question: string
+  answer: string
+}
+
+export interface FreelanceGig {
+  id: string
+  seller_id: string
+  category_id: string
+  title: string
+  slug: string | null
+  description: string
+  cover_image: string | null
+  audio_samples: FreelanceAudioSample[]
+  faq: FreelanceFaqItem[]
+  requirements: string | null
+  rating_avg: number
+  rating_count: number
+  order_queue_count: number
+  status: FreelanceGigStatus
+  created_at: string
+  seller?: User
+  category?: FreelanceCategory
+  packages?: FreelancePackage[]
+  reviews?: FreelanceReview[]
+}
+
+export interface FreelancePackageFeatures {
+  wav_delivery?: boolean
+  mp3_delivery?: boolean
+  stem_delivery?: boolean
+  commercial_rights?: boolean
+}
+
+export interface FreelancePackage {
+  id: string
+  gig_id: string
+  tier: FreelancePackageTier
+  title: string
+  description: string
+  delivery_days: number
+  revisions_count: number
+  price: number
+  features: FreelancePackageFeatures
+  created_at: string
+}
+
+export interface FreelanceOrder {
+  id: string
+  gig_id: string
+  package_id: string
+  buyer_id: string
+  seller_id: string
+  price: number
+  status: FreelanceOrderStatus
+  requirements_submitted: string | null
+  delivered_files: { name: string; url: string }[]
+  delivery_note: string | null
+  delivered_at: string | null
+  auto_complete_at: string | null
+  created_at: string
+  gig?: FreelanceGig
+  package?: FreelancePackage
+  buyer?: User
+  seller?: User
+}
+
+export interface FreelanceReview {
+  id: string
+  order_id: string
+  gig_id: string
+  buyer_id: string
+  seller_id: string
+  rating: number
+  comment: string | null
+  seller_reply: string | null
+  created_at: string
+  buyer?: User
 }

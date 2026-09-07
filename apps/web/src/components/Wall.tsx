@@ -2,11 +2,13 @@
 
 import { useEffect, useRef } from 'react'
 import type { Post } from '@stagein/shared'
+import { Inbox, WifiOff } from 'lucide-react'
 import { useWall } from '@/hooks/useWall'
 import { useWallRealtime } from '@/hooks/useRealtimeUpdates'
+import { EmptyState } from '@/components/EmptyState'
+import { Skeleton } from '@/components/Skeleton'
 import { PostCard } from './PostCard'
 import { PostComposer } from './PostComposer'
-import { EmptyState, Skeleton } from './ui'
 
 function PostCardSkeleton() {
   return (
@@ -53,9 +55,17 @@ export function Wall({ initialPosts }: { initialPosts: Post[] }) {
           ))}
         </>
       ) : isError ? (
-        <EmptyState title="Duvar yüklenemedi" description="Bağlantını kontrol edip tekrar dene." />
+        <EmptyState
+          icon={WifiOff}
+          title="Duvar yüklenemedi"
+          description="Bağlantını kontrol edip tekrar dene."
+        />
       ) : posts.length === 0 ? (
-        <EmptyState title="Henüz gönderi yok" description="İlk gönderiyi sen paylaş." />
+        <EmptyState
+          icon={Inbox}
+          title="Henüz gönderi yok"
+          description="Duvarında henüz kimse paylaşım yapmamış. İlk gönderiyi sen paylaş."
+        />
       ) : (
         <>
           {posts.map((post) => (

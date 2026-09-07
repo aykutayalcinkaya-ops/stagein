@@ -2,8 +2,10 @@
 
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
+import { motion } from 'motion/react'
+import { Disc3, Heart, MessageCircle, Music2, Send, Volume2, VolumeX } from 'lucide-react'
 import type { ReactionType, Video } from '@stagein/shared'
-import { REACTION_EMOJIS, REACTION_LABELS } from '@stagein/shared'
+import { REACTION_EMOJIS } from '@stagein/shared'
 import { useVideoToggleReaction } from '@/hooks/usePostReactions'
 import { useToggleVideoShare } from '@/hooks/usePostShares'
 import { useVideoSource } from '@/hooks/useVideoSource'
@@ -15,6 +17,7 @@ import { extractYoutubeVideoId } from '@/lib/youtube'
 import { UserAvatar } from './UserAvatar'
 import { ReactionPicker } from './ReactionPicker'
 import { ShareMenu } from './ShareMenu'
+import { cn } from './ui'
 
 function IconButton({
   onClick,
@@ -49,10 +52,17 @@ function IconButton({
   )
 }
 
+// Tek reaksiyon kontrolü: eskiden burada üst-3 reaksiyonun her biri için ayrı
+// bir tam boy IconButton (dikey yığın) VE altında ayrı bir ReactionPicker
+// birlikte render ediliyordu — iki farklı reaksiyon kontrolü alt alta
+// duruyordu (gravity.md madde 2). Artık tek kontrol var: mevcut reaksiyonu
+// gösteren tek bir dairesel tetikleyici (ReactionPicker), altında en çok
+// kullanılan 1-2 emoji + toplam sayı özet olarak gösteriliyor.
 function VideoReactionPanel({ video }: { video: Video }) {
   const userId = useAuthStore((s) => s.userId)
   const { mutate: toggleReaction, isPending } = useVideoToggleReaction()
-  const topReactions = sortedReactionEntries(video.reactions).slice(0, 3)
+  const topReactions = sortedReactionEntries(video.reactions).slice(0, 2)
+  const totalReactions = topReactions.reduce((sum, [, count]) => sum + count, 0)
   const myReaction = video.my_reaction ?? null
 
   function quickToggle(reaction: ReactionType) {
@@ -61,21 +71,26 @@ function VideoReactionPanel({ video }: { video: Video }) {
     toggleReaction({ videoId: video.id, reactionType: reaction, add, oldReaction: myReaction })
   }
 
-  return (
-    <div className="pointer-events-auto flex flex-col items-center gap-1.5">
-      {topReactions.map(([reaction, count]) => (
-        <IconButton
-          key={reaction}
-          onClick={() => quickToggle(reaction)}
-          active={myReaction === reaction}
-          label={REACTION_LABELS[reaction]}
-          count={count}
-        >
-          <span className="text-lg leading-none">{REACTION_EMOJIS[reaction]}</span>
-        </IconButton>
-      ))}
+  if (!userId) {
+    return (
+      <Link
+        href="/giris"
+        aria-label="Beğenmek için giriş yap"
+        className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md"
+      >
+        <Heart className="h-5 w-5" strokeWidth={1.8} />
+      </Link>
+    )
+  }
 
-      {userId ? (
+  return (
+    <div className="pointer-events-auto flex flex-col items-center gap-1">
+      <div
+        className={cn(
+          'flex h-11 w-11 items-center justify-center rounded-full backdrop-blur-md transition-all duration-180 active:scale-90',
+          myReaction ? 'bg-accent text-dark' : 'bg-white/10 hover:bg-white/15'
+        )}
+      >
         <ReactionPicker
           postId=""
           videoId={video.id}
@@ -83,13 +98,17 @@ function VideoReactionPanel({ video }: { video: Video }) {
           isLoading={isPending}
           onSelect={quickToggle}
         />
-      ) : (
-        <Link href="/giris" className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5">
-            <path d="M12 21s-6.7-4.3-9.3-8.1C.8 10 1.4 6.4 4.4 4.8c2.1-1.1 4.6-.6 6.1 1.2.4.5.7.9 1.5.9.8 0 1.1-.4 1.5-.9 1.5-1.8 4-2.3 6.1-1.2 3 1.6 3.6 5.2 1.7 8.1C18.7 16.7 12 21 12 21Z" />
-          </svg>
-        </Link>
-      )}
+      </div>
+      {totalReactions > 0 ? (
+        <span className="flex items-center gap-0.5 text-xs font-semibold text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]">
+          {topReactions.map(([reaction]) => (
+            <span key={reaction} className="leading-none">
+              {REACTION_EMOJIS[reaction]}
+            </span>
+          ))}
+          {totalReactions}
+        </span>
+      ) : null}
     </div>
   )
 }
@@ -147,8 +166,11 @@ export function FeedVideo({ video }: { video: Video }) {
   const author = video.user
 
   return (
-    <div
+    <motion.div
       ref={containerRef}
+      initial={{ opacity: 0, scale: 0.98 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       className="relative h-dvh w-full shrink-0 snap-start snap-always overflow-hidden bg-black"
       onDoubleClick={handleDoubleClick}
     >
@@ -203,13 +225,10 @@ export function FeedVideo({ video }: { video: Video }) {
       {/* çift-tık kalp animasyonu */}
       {burst ? (
         <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
-          <svg
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            className="h-24 w-24 animate-[ping_0.7s_ease-out] text-accent drop-shadow-[0_4px_18px_rgba(0,0,0,0.5)]"
-          >
-            <path d="M12 21s-6.7-4.3-9.3-8.1C.8 10 1.4 6.4 4.4 4.8c2.1-1.1 4.6-.6 6.1 1.2.4.5.7.9 1.5.9.8 0 1.1-.4 1.5-.9 1.5-1.8 4-2.3 6.1-1.2 3 1.6 3.6 5.2 1.7 8.1C18.7 16.7 12 21 12 21Z" />
-          </svg>
+          <Heart
+            strokeWidth={0}
+            className="h-24 w-24 animate-[ping_0.7s_ease-out] fill-accent text-accent drop-shadow-[0_4px_18px_rgba(0,0,0,0.5)]"
+          />
         </div>
       ) : null}
 
@@ -249,11 +268,7 @@ export function FeedVideo({ video }: { video: Video }) {
           </p>
 
           <div className="mt-2.5 flex items-center gap-2 text-xs text-white/70">
-            <svg viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5 shrink-0 animate-pulse">
-              <path d="M9 18V5l12-2v13" />
-              <circle cx="6" cy="18" r="3" />
-              <circle cx="18" cy="16" r="3" />
-            </svg>
+            <Music2 className="h-3.5 w-3.5 shrink-0 animate-pulse" fill="currentColor" stroke="none" />
             <span className="truncate">Orijinal ses · {author?.username ?? 'stagein'}</span>
           </div>
         </div>
@@ -277,49 +292,33 @@ export function FeedVideo({ video }: { video: Video }) {
             <ShareMenu
               postId={video.id}
               videoId={video.id}
+              variant="icon"
+              shareCount={video.share_count}
               onShareToWall={(caption) => toggleShare({ videoId: video.id, shared: true, caption })}
             />
           </div>
 
           <IconButton label="Cevaplar" count={0}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-6 w-6">
-              <path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H7l-4 3 .5-4.5A8.5 8.5 0 1 1 21 11.5Z" />
-            </svg>
+            <MessageCircle className="h-5 w-5" strokeWidth={1.8} />
           </IconButton>
 
           {author ? (
             <IconButton label="Mesaj at">
               <Link href={`/profil/${author.username}`} className="flex h-full w-full items-center justify-center" aria-label="Mesaj at">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5">
-                  <path d="M22 2 11 13" />
-                  <path d="M22 2 15 22l-4-9-9-4 20-7Z" />
-                </svg>
+                <Send className="h-5 w-5" strokeWidth={1.8} />
               </Link>
             </IconButton>
           ) : null}
 
           <IconButton onClick={toggleMuted} label={muted ? 'Sesi aç' : 'Sesi kapat'}>
-            {muted ? (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5">
-                <path d="M11 5 6 9H2v6h4l5 4V5Z" />
-                <path d="m23 9-6 6M17 9l6 6" />
-              </svg>
-            ) : (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5">
-                <path d="M11 5 6 9H2v6h4l5 4V5Z" />
-                <path d="M15.5 8.5a5 5 0 0 1 0 7M19 6a9 9 0 0 1 0 12" />
-              </svg>
-            )}
+            {muted ? <VolumeX className="h-5 w-5" strokeWidth={1.8} /> : <Volume2 className="h-5 w-5" strokeWidth={1.8} />}
           </IconButton>
 
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 backdrop-blur-md">
-            <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 animate-[spin_4s_linear_infinite] text-white/80">
-              <circle cx="12" cy="12" r="3" />
-              <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="2 3" />
-            </svg>
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 backdrop-blur-md">
+            <Disc3 className="h-5 w-5 animate-[spin_4s_linear_infinite] text-white/80" strokeWidth={1.8} />
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }

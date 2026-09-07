@@ -1,6 +1,7 @@
 import 'server-only'
 import type {
   Endorsement,
+  FreelanceGig,
   Listing,
   ListingType,
   MarketplaceItem,
@@ -128,6 +129,19 @@ export async function getMarketplaceItems(city?: string, limit = 30): Promise<Ma
   const { data, error } = await query
   if (error) return []
   return (data ?? []) as MarketplaceItem[]
+}
+
+export async function getFreelanceGigs(limit = 12): Promise<FreelanceGig[]> {
+  if (!isSupabaseConfigured) return []
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('freelance_gigs')
+    .select(`*, seller:seller_id(${USER_SELECT}), packages:freelance_packages(*)`)
+    .eq('status', 'active')
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (error) return []
+  return (data ?? []) as FreelanceGig[]
 }
 
 export async function getStudio(id: string): Promise<User | null> {

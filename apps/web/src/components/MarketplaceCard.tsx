@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import type { MarketplaceItem } from '@stagein/shared'
 import { formatPrice, formatRelative } from '@/lib/site'
 import { Chip } from './ui'
@@ -6,7 +7,10 @@ export function MarketplaceCard({ item }: { item: MarketplaceItem }) {
   const cover = item.photos?.[0]
 
   return (
-    <article className="group overflow-hidden rounded-2xl border border-white/[0.06] bg-card/60 transition-all duration-180 hover:-translate-y-1 hover:border-accent/40">
+    <Link
+      href={`/pazar/${item.id}`}
+      className="group block overflow-hidden rounded-2xl border border-white/[0.06] bg-card/60 transition-all duration-180 hover:-translate-y-1 hover:border-accent/40"
+    >
       <div className="aspect-[4/3] w-full overflow-hidden bg-surface">
         {cover ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -31,6 +35,6 @@ export function MarketplaceCard({ item }: { item: MarketplaceItem }) {
           <span className="text-xs text-muted">{formatRelative(item.created_at)}</span>
         </div>
       </div>
-    </article>
+    </Link>
   )
 }

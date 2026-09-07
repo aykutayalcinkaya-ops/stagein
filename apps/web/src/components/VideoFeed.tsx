@@ -6,6 +6,7 @@ import { useVideoFeed } from '@/hooks/useVideoFeed'
 import { useVideoFeedRealtime } from '@/hooks/useRealtimeUpdates'
 import { useFeedPlaybackStore } from '@/stores/feedPlaybackStore'
 import { FeedVideo } from './FeedVideo'
+import { BackButton } from './BackButton'
 import { CITIES } from '@stagein/shared'
 import { EmptyState, LinkButton, Skeleton, cn } from './ui'
 
@@ -65,9 +66,12 @@ export function VideoFeed({ startVideoId }: { startVideoId?: string }) {
     <div className="relative h-dvh w-full bg-black">
       {/* immersive üst çubuk — Keşfet'te SiteHeader gizli */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-3 bg-gradient-to-b from-black/70 to-transparent px-4 pb-8 pt-[max(1rem,env(safe-area-inset-top))]">
-        <Link href="/" className="pointer-events-auto font-display text-xl uppercase tracking-wide text-white">
-          Stage<span className="text-primary">In</span>
-        </Link>
+        <div className="pointer-events-auto flex items-center gap-2.5">
+          <BackButton />
+          <Link href="/" className="hidden font-display text-xl uppercase tracking-wide text-white sm:inline">
+            Stage<span className="text-primary">In</span>
+          </Link>
+        </div>
 
         <div className="pointer-events-auto flex items-center gap-1 rounded-full bg-white/10 p-1 backdrop-blur-md">
           {(['takip', 'kesfet'] as const).map((t) => (

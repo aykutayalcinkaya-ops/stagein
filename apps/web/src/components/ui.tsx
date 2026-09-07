@@ -1,16 +1,32 @@
+'use client'
+
 import Link from 'next/link'
 import type { ReactNode } from 'react'
+import { motion } from 'motion/react'
 
 export function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ')
 }
 
 const buttonBase =
-  'inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 font-semibold tracking-tight transition-all duration-180 ease-out active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50'
+  'inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-full px-6 py-3 font-semibold tracking-tight transition-all duration-180 ease-out disabled:pointer-events-none disabled:opacity-50'
 
+/**
+ * Semantik buton renk hiyerarşisi (UI/UX Pro Max):
+ * - `primary`   → ana marka rengi, en önemli tekil eylem (CTA)
+ * - `secondary` → nötr/outline, ikincil eylemler
+ * - `destructive` → kırmızı, silme/şikayet gibi geri alınamaz eylemler
+ * - `accent`    → vurgulanan/öne çıkan çağrılar (ör. "Şimdi Katıl")
+ * - `outline`/`ghost` → geriye dönük uyumluluk için korunuyor (mevcut
+ *   çağrı yerleri: AuthForm.tsx, hakkimizda/page.tsx, not-found.tsx)
+ */
 const variants = {
   primary:
     'bg-primary text-white shadow-[0_8px_24px_-8px_var(--color-primary)] hover:bg-primary-dim hover:shadow-[0_10px_28px_-6px_var(--color-primary)]',
+  secondary:
+    'border border-border-strong bg-white/[0.04] text-text hover:border-primary/60 hover:bg-white/[0.08]',
+  destructive:
+    'bg-red-600 text-white shadow-[0_8px_24px_-8px_rgba(220,38,38,0.55)] hover:bg-red-500 hover:shadow-[0_10px_28px_-6px_rgba(220,38,38,0.65)]',
   accent:
     'bg-accent text-dark shadow-[0_8px_24px_-8px_var(--color-accent)] hover:bg-accent-dim hover:shadow-[0_10px_28px_-6px_var(--color-accent)]',
   outline: 'border border-border-strong text-text hover:border-primary hover:bg-primary/5',
@@ -19,12 +35,30 @@ const variants = {
 
 type Variant = keyof typeof variants
 
+type NativeButtonProps = Omit<
+  React.ButtonHTMLAttributes<HTMLButtonElement>,
+  'onDrag' | 'onDragStart' | 'onDragEnd' | 'onAnimationStart' | 'onAnimationEnd' | 'onAnimationIteration'
+>
+
+type NativeAnchorProps = Omit<
+  React.AnchorHTMLAttributes<HTMLAnchorElement>,
+  'onDrag' | 'onDragStart' | 'onDragEnd' | 'onAnimationStart' | 'onAnimationEnd' | 'onAnimationIteration'
+>
+
+const MotionLink = motion.create(Link)
+
 export function Button({
   variant = 'primary',
   className,
   ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant }) {
-  return <button className={cn(buttonBase, variants[variant], className)} {...props} />
+}: NativeButtonProps & { variant?: Variant }) {
+  return (
+    <motion.button
+      whileTap={{ scale: 0.96 }}
+      className={cn(buttonBase, variants[variant], className)}
+      {...props}
+    />
+  )
 }
 
 export function LinkButton({
@@ -33,14 +67,19 @@ export function LinkButton({
   children,
   href,
   ...props
-}: React.AnchorHTMLAttributes<HTMLAnchorElement> & {
+}: NativeAnchorProps & {
   href: string
   variant?: Variant
 }) {
   return (
-    <Link href={href} className={cn(buttonBase, variants[variant], className)} {...(props as any)}>
+    <MotionLink
+      href={href}
+      whileTap={{ scale: 0.96 }}
+      className={cn(buttonBase, variants[variant], className)}
+      {...props}
+    >
       {children}
-    </Link>
+    </MotionLink>
   )
 }
 

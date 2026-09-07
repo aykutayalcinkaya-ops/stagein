@@ -1,9 +1,10 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { Listing, ListingType } from '@stagein/shared'
 import { createClient } from '@/lib/supabase/client'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
+import { createListing } from '@/lib/api'
 
 export interface ListingQueryFilters {
   city?: string
@@ -34,6 +35,16 @@ export function useListings(filters: ListingQueryFilters = {}) {
       const { data, error } = await query
       if (error) throw error
       return (data ?? []) as Listing[]
+    },
+  })
+}
+
+export function useCreateListing() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: createListing,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['listings'] })
     },
   })
 }

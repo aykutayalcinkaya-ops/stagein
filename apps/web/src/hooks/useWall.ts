@@ -1,12 +1,20 @@
 'use client'
 
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type { Post, PostComment, ReactionType } from '@stagein/shared'
+import type { Post, PostComment, PostReportReason, ReactionType } from '@stagein/shared'
 import { createClient } from '@/lib/supabase/client'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { useAuthStore } from '@/stores/authStore'
 import { DEMO_POSTS } from '@/lib/demoContent'
-import { addComment, createPost, deletePost, deletePostComment, togglePostLike, type CreatePostInput } from '@/lib/api'
+import {
+  addComment,
+  createPost,
+  deletePost,
+  deletePostComment,
+  reportPost,
+  updatePost,
+  type CreatePostInput,
+} from '@/lib/api'
 
 const PAGE_SIZE = 10
 const POST_SELECT = `
@@ -26,16 +34,6 @@ async function fetchPostsPage(pageParam: number, viewerId: string | null): Promi
 
   if (!viewerId || posts.length === 0) return posts
 
-  const { data: likes } = await supabase
-    .from('post_likes')
-    .select('post_id')
-    .eq('user_id', viewerId)
-    .in(
-      'post_id',
-      posts.map((p) => p.id)
-    )
-  const likedIds = new Set((likes ?? []).map((row) => row.post_id as string))
-
   const { data: userReactions, error: reactionsError } = await supabase
     .from('post_reactions')
     .select('post_id, reaction_type')
@@ -48,7 +46,7 @@ async function fetchPostsPage(pageParam: number, viewerId: string | null): Promi
     !reactionsError && userReactions ? (userReactions as Array<{post_id: string; reaction_type: ReactionType}>).map((r) => [r.post_id, r.reaction_type]) : []
   )
 
-  return posts.map((p) => ({ ...p, liked_by_me: likedIds.has(p.id), my_reaction: reactionsMap.get(p.id) ?? null }))
+  return posts.map((p) => ({ ...p, my_reaction: reactionsMap.get(p.id) ?? null }))
 }
 
 export function useWall(initialPosts: Post[] = []) {
@@ -78,29 +76,6 @@ export function useCreatePost() {
       queryClient.setQueryData<{ pages: Post[][]; pageParams: number[] }>(['wall'], (current) => {
         if (!current) return { pages: [[post]], pageParams: [0] }
         return { ...current, pages: [[post, ...current.pages[0]], ...current.pages.slice(1)] }
-      })
-    },
-  })
-}
-
-export function useTogglePostLike() {
-  const queryClient = useQueryClient()
-  const userId = useAuthStore((s) => s.userId)
-
-  return useMutation({
-    mutationFn: async ({ postId, like }: { postId: string; like: boolean }) => {
-      if (!userId) throw new Error('Giriş yapmalısın')
-      await togglePostLike(postId, userId, like)
-    },
-    onMutate: async ({ postId, like }) => {
-      queryClient.setQueryData<{ pages: Post[][]; pageParams: number[] }>(['wall'], (current) => {
-        if (!current) return current
-        return {
-          ...current,
-          pages: current.pages.map((page) =>
-            page.map((p) => (p.id === postId ? { ...p, liked_by_me: like } : p))
-          ),
-        }
       })
     },
   })
@@ -162,5 +137,36 @@ export function useDeletePost() {
         return { ...current, pages: current.pages.map((page) => page.filter((p) => p.id !== postId)) }
       })
     },
+  })
+}
+
+/** Gönderi metnini düzenler ("Düzenle" — post 3-nokta menüsü). */
+export function useUpdatePost() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ postId, body }: { postId: string; body: string }) => updatePost(postId, body),
+    onSuccess: (updated) => {
+      queryClient.setQueryData<{ pages: Post[][]; pageParams: number[] }>(['wall'], (current) => {
+        if (!current) return current
+        return {
+          ...current,
+          pages: current.pages.map((page) =>
+            page.map((p) => (p.id === updated.id ? { ...p, body: updated.body, updated_at: updated.updated_at } : p))
+          ),
+        }
+      })
+    },
+  })
+}
+
+/**
+ * Bir gönderiyi şikayet eder ("Şikayet Et" — post 3-nokta menüsü). Gerçek
+ * backend: bkz. `reportPost` (`@/lib/api`) ve `029_post_updates_and_reports.sql`.
+ */
+export function useReportPost() {
+  return useMutation({
+    mutationFn: ({ postId, userId, reason }: { postId: string; userId: string; reason: PostReportReason }) =>
+      reportPost(postId, userId, reason),
   })
 }
