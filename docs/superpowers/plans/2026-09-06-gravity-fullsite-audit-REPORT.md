@@ -101,11 +101,17 @@ Yerel dev sunucusu (`next dev`, port 3001/3002) üzerinden gerçek tarayıcı te
 - `pnpm --filter @stagein/web type-check` → **temiz**, 0 hata (son çalıştırma: tüm Wave'ler + video-reaksiyon fix'i sonrası)
 - `pnpm --filter @stagein/web build` → **başarılı**, 22 route üretildi, 0 hata
 
-## 9. Tamamlanmamış / dikkat gerektiren maddeler
+## 9. Güncelleme (08:40) — 4 takip maddesi
 
-1. **3 migration prod'a push edilmedi** (§6) — en kritik eksik, YouTube ve post-menü özelliklerinin canlıda çalışması buna bağlı.
-2. **Hesap silme backend'i yok** — UI hazır, RPC yazılmadı.
-3. **Marketplace/login TestSprite testleri** bellek kısıtı nedeniyle koşulamadı.
-4. **`ListingApplicationModal.tsx`** hiçbir sayfadan import edilmiyor (kullanılmayan/yarım kalmış kod) — Wave 3 bunu da düzeltti ama bağlı olmadığı için etkisi yok.
-5. **`MarketplaceFilters.tsx`** de hiçbir yerden import edilmiyor (dead code, yine de düzeltildi).
-6. Kalan uncommitted değişiklikler (§ üstteki uyarı) commit'lenmeli.
+Kullanıcı "dikkat edilmesi gereken 4 noktayı da düzelt" dedi. Sonuç:
+
+1. **Vercel push** ✅ Doğrulandı — `git push` zaten olmuş (`7d66105`, diğer oturum tarafından), Vercel bunu 2 dakika içinde otomatik prod'a deploy etmiş (`stagein-web.vercel.app`). Bu gecenin kalan değişiklikleri (`1816b6a`) de commit'lenip push edildi, yeni bir Vercel deployment'ı tetiklendi.
+2. **Hesap silme backend'i** ✅ Yazıldı — `supabase/migrations/030_delete_user_account.sql`: 26 tabloyu (users'a doğrudan/dolaylı referans veren) tek tek inceleyip doğru sırayla hard-delete/anonimleştirme yapan `delete_user_account()` RPC'si. Kolon adları migration dosyalarına karşı doğrulandı. **Henüz prod'a push edilmedi** (madde 3'e bağlı).
+3. **3→4 migration prod'a push edilmedi** ❌ Hâlâ bloke — `SUPABASE_DB_PASSWORD` ortam değişkeni `proje-sifren` (placeholder) değerinde, gerçek şifre değil; `supabase db push` yine "password authentication failed" ile başarısız oldu. **Gerçek DB şifresi olmadan bu ortamdan yapılamaz.** Bekleyen: `024`, `028`, `029`, `030`.
+4. **Marketplace/login TestSprite testleri** ❌ Hâlâ koşulamadı — dev sunucusunu 3 kez yeniden başlattım, üçünde de sistem "bellek yetersizliği" nedeniyle hem sunucuyu hem bağlı TestSprite tünelini öldürdü. Bu tekrarlayan bir donanım/kaynak kısıtı; aynı yaklaşımı 4. kez denemek yerine durdum.
+
+**Diğer küçük notlar:**
+- `ListingApplicationModal.tsx` ve `MarketplaceFilters.tsx` hâlâ hiçbir sayfadan import edilmiyor (dead code) — Wave 3 kalite düzeltmelerini uyguladı ama bağlanmadıkları için kullanıcıya görünmüyor.
+- Kalan uncommitted değişiklikler artık commit'lendi (`1816b6a`) ve push edildi — repo temiz.
+
+**Uyanınca tek yapman gereken:** Supabase dashboard → Settings → Database'den gerçek DB şifresini al, `SUPABASE_DB_PASSWORD` olarak ayarla, `supabase db push` çalıştır (4 migration birden gider). Bu olmadan: YouTube videoları, post düzenleme/şikayet, ve hesap silme özellikleri UI'da görünür ama backend'de çalışmaz.
