@@ -151,6 +151,7 @@ export interface Message {
 export interface Conversation {
   id: string
   participant_ids: string[]
+  title: string | null
   last_message_at: string
   participants?: User[]
   last_message?: Message

@@ -99,7 +99,7 @@ export default async function ProfilPage({ params }: PageProps) {
           </div>
         </div>
 
-        <ProfileHeaderActions username={user.username} />
+        <ProfileHeaderActions userId={user.id} username={user.username} />
       </header>
 
       <ProfileLinkList links={links} />

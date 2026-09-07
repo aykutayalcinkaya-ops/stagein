@@ -1,10 +1,12 @@
 'use client'
 
 import Link from 'next/link'
+import { useQuery } from '@tanstack/react-query'
 import { MessageCircle, Send } from 'lucide-react'
 import { Button } from '@/components/ui'
 import { useAuthStore } from '@/stores/authStore'
 import { useStartConversation } from '@/hooks/useMessaging'
+import { isUserBlocked } from '@/lib/api'
 
 interface StartConversationButtonProps {
   otherUserId: string
@@ -22,6 +24,17 @@ interface StartConversationButtonProps {
 export function StartConversationButton({ otherUserId, label = 'Mesaj At', variant = 'button', className }: StartConversationButtonProps) {
   const userId = useAuthStore((s) => s.userId)
   const { mutate: startConversation, isPending } = useStartConversation()
+  const { data: eitherBlocked } = useQuery({
+    queryKey: ['either-blocked', userId, otherUserId],
+    queryFn: async () => {
+      const [iBlockedThem, theyBlockedMe] = await Promise.all([
+        isUserBlocked(userId!, otherUserId),
+        isUserBlocked(otherUserId, userId!),
+      ])
+      return iBlockedThem || theyBlockedMe
+    },
+    enabled: !!userId && userId !== otherUserId,
+  })
 
   if (!userId) {
     return variant === 'icon' ? (
@@ -39,7 +52,7 @@ export function StartConversationButton({ otherUserId, label = 'Mesaj At', varia
     )
   }
 
-  if (userId === otherUserId) return null
+  if (userId === otherUserId || eitherBlocked) return null
 
   if (variant === 'icon') {
     return (

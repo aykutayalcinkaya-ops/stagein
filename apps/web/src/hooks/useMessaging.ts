@@ -4,12 +4,16 @@ import { useRouter } from 'next/navigation'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { Conversation, Message } from '@stagein/shared'
 import {
+  createGroupConversation,
   getConversation,
+  getConversationReads,
   getOrCreateConversation,
   listConversations,
   listMessages,
   markConversationRead,
+  searchUsers,
   sendMessage,
+  uploadVoiceMessage,
 } from '@/lib/api'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -79,6 +83,57 @@ export function useSendMessage(conversationId: string) {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['messages', conversationId] })
       queryClient.invalidateQueries({ queryKey: ['conversations'] })
+    },
+  })
+}
+
+/** Konuşmadaki her katılımcının en son okuma zamanı — userId -> ISO tarih. "Görüldü" göstergesi için. */
+export function useConversationReads(conversationId: string) {
+  return useQuery({
+    queryKey: ['conversation-reads', conversationId],
+    queryFn: () => getConversationReads(conversationId),
+    enabled: !!conversationId,
+    refetchInterval: 5000,
+  })
+}
+
+export function useSendVoiceMessage(conversationId: string) {
+  const queryClient = useQueryClient()
+  const userId = useAuthStore((s) => s.userId)
+
+  return useMutation({
+    mutationFn: async (blob: Blob) => {
+      if (!userId) throw new Error('Giriş yapmalısın')
+      const audioUrl = await uploadVoiceMessage(userId, blob)
+      return sendMessage({ conversationId, senderId: userId, audioUrl })
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['messages', conversationId] })
+      queryClient.invalidateQueries({ queryKey: ['conversations'] })
+    },
+  })
+}
+
+export function useSearchUsers(query: string) {
+  const userId = useAuthStore((s) => s.userId)
+  return useQuery({
+    queryKey: ['search-users', query],
+    queryFn: () => searchUsers(query, userId ? [userId] : []),
+    enabled: query.trim().length >= 2,
+  })
+}
+
+export function useCreateGroupConversation() {
+  const router = useRouter()
+  const userId = useAuthStore((s) => s.userId)
+
+  return useMutation({
+    mutationFn: ({ participantIds, title }: { participantIds: string[]; title: string | null }) => {
+      if (!userId) throw new Error('Giriş yapmalısın')
+      return createGroupConversation([userId, ...participantIds], title)
+    },
+    onSuccess: (conversation) => {
+      router.push(`/mesajlar/${conversation.id}`)
     },
   })
 }

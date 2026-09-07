@@ -759,7 +759,28 @@ export async function deleteOwnAccount(): Promise<void> {
 // Mesajlaşma (bkz. docs/superpowers/plans/2026-09-07-web-mesajlasma-plani.md)
 // ---------------------------------------------------------------------------
 
-const CONVERSATION_SELECT = `id, participant_ids, last_message_at`
+const CONVERSATION_SELECT = `id, participant_ids, title, last_message_at`
+
+export async function searchUsers(query: string, excludeIds: string[]): Promise<User[]> {
+  if (!query.trim()) return []
+  const supabase = createClient()
+  let q = supabase.from('users').select(USER_SELECT).or(`username.ilike.%${query}%,full_name.ilike.%${query}%`).limit(10)
+  if (excludeIds.length > 0) q = q.not('id', 'in', `(${excludeIds.join(',')})`)
+  const { data, error } = await q
+  if (error) throw error
+  return (data ?? []) as User[]
+}
+
+export async function createGroupConversation(participantIds: string[], title: string | null): Promise<Conversation> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('conversations')
+    .insert({ participant_ids: participantIds, title })
+    .select(CONVERSATION_SELECT)
+    .single()
+  if (error) throw error
+  return data as Conversation
+}
 
 export async function getOrCreateConversation(
   currentUserId: string,
@@ -786,21 +807,33 @@ export async function getOrCreateConversation(
 
 export async function listConversations(userId: string): Promise<Conversation[]> {
   const supabase = createClient()
-  const { data, error } = await supabase
-    .from('conversations')
-    .select(CONVERSATION_SELECT)
-    .contains('participant_ids', [userId])
-    .order('last_message_at', { ascending: false })
+  const [{ data, error }, { data: blocksIMade }, { data: blocksAgainstMe }] = await Promise.all([
+    supabase
+      .from('conversations')
+      .select(CONVERSATION_SELECT)
+      .contains('participant_ids', [userId])
+      .order('last_message_at', { ascending: false }),
+    supabase.from('user_blocks').select('blocked_id').eq('blocker_id', userId),
+    supabase.from('user_blocks').select('blocker_id').eq('blocked_id', userId),
+  ])
   if (error) throw error
 
-  const conversations = (data ?? []) as Conversation[]
+  // Engellenen/beni engelleyen biriyle olan konuşmalar gelen kutusunda görünmez.
+  const blockedIds = new Set([
+    ...(blocksIMade ?? []).map((b) => b.blocked_id as string),
+    ...(blocksAgainstMe ?? []).map((b) => b.blocker_id as string),
+  ])
+  const conversations = ((data ?? []) as Conversation[]).filter(
+    (c) => !c.participant_ids.some((id) => id !== userId && blockedIds.has(id))
+  )
   if (conversations.length === 0) return []
 
   // Her katılımcının kullanıcı bilgisini ve her konuşmanın son mesajını ayrı
   // sorgularla çekip client-side eşleştiriyoruz — participant_ids bir array
   // olduğundan PostgREST'in tek sorguda ilişkisel join'i burada çalışmaz.
+  // Grup sohbetlerinde birden fazla "diğer katılımcı" olabilir.
   const otherUserIds = Array.from(
-    new Set(conversations.map((c) => c.participant_ids.find((id) => id !== userId)).filter((id): id is string => !!id))
+    new Set(conversations.flatMap((c) => c.participant_ids.filter((id) => id !== userId)))
   )
   const conversationIds = conversations.map((c) => c.id)
 
@@ -824,12 +857,12 @@ export async function listConversations(userId: string): Promise<Conversation[]>
   const readAtByConversation = new Map((reads ?? []).map((r) => [r.conversation_id as string, r.last_read_at as string]))
 
   return conversations.map((c) => {
-    const otherId = c.participant_ids.find((id) => id !== userId)
+    const otherIds = c.participant_ids.filter((id) => id !== userId)
     const lastMessage = lastMessageByConversation.get(c.id)
     const readAt = readAtByConversation.get(c.id)
     return {
       ...c,
-      participants: otherId && usersById.has(otherId) ? [usersById.get(otherId)!] : [],
+      participants: otherIds.map((id) => usersById.get(id)).filter((u): u is User => !!u),
       last_message: lastMessage,
       unread: !!lastMessage && lastMessage.sender_id !== userId && (!readAt || new Date(lastMessage.created_at) > new Date(readAt)),
     } as Conversation & { unread: boolean }
@@ -842,10 +875,10 @@ export async function getConversation(conversationId: string, userId: string): P
   if (error) throw error
   if (!data) return null
   const conversation = data as Conversation
-  const otherId = conversation.participant_ids.find((id) => id !== userId)
-  if (!otherId) return conversation
-  const { data: other } = await supabase.from('users').select(USER_SELECT).eq('id', otherId).maybeSingle()
-  return { ...conversation, participants: other ? [other as User] : [] }
+  const otherIds = conversation.participant_ids.filter((id) => id !== userId)
+  if (otherIds.length === 0) return conversation
+  const { data: others } = await supabase.from('users').select(USER_SELECT).in('id', otherIds)
+  return { ...conversation, participants: (others ?? []) as User[] }
 }
 
 export async function listMessages(conversationId: string, before?: string): Promise<Message[]> {
@@ -862,10 +895,19 @@ export async function listMessages(conversationId: string, before?: string): Pro
   return ((data ?? []) as Message[]).reverse()
 }
 
+export async function uploadVoiceMessage(userId: string, blob: Blob): Promise<string> {
+  const supabase = createClient()
+  const path = `${userId}/${Date.now()}.webm`
+  const { error } = await supabase.storage.from('audio-notes').upload(path, blob, { contentType: blob.type || 'audio/webm' })
+  if (error) throw error
+  return supabase.storage.from('audio-notes').getPublicUrl(path).data.publicUrl
+}
+
 export async function sendMessage(input: {
   conversationId: string
   senderId: string
-  content: string
+  content?: string | null
+  audioUrl?: string | null
   contextType?: 'video' | 'listing' | 'direct'
   contextId?: string
 }): Promise<Message> {
@@ -875,7 +917,8 @@ export async function sendMessage(input: {
     .insert({
       conversation_id: input.conversationId,
       sender_id: input.senderId,
-      content: input.content,
+      content: input.content ?? null,
+      audio_url: input.audioUrl ?? null,
       context_type: input.contextType ?? 'direct',
       context_id: input.contextId ?? null,
     })
@@ -896,4 +939,59 @@ export async function markConversationRead(conversationId: string, userId: strin
   await supabase
     .from('conversation_reads')
     .upsert({ conversation_id: conversationId, user_id: userId, last_read_at: new Date().toISOString() })
+}
+
+// ---------------------------------------------------------------------------
+// Moderasyon: engelleme + kullanıcı şikayeti (bkz. 035_user_blocks_and_reports.sql)
+// ---------------------------------------------------------------------------
+
+export async function blockUser(blockerId: string, blockedId: string): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase.from('user_blocks').insert({ blocker_id: blockerId, blocked_id: blockedId })
+  if (error) throw error
+}
+
+export async function unblockUser(blockerId: string, blockedId: string): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase.from('user_blocks').delete().eq('blocker_id', blockerId).eq('blocked_id', blockedId)
+  if (error) throw error
+}
+
+export async function isUserBlocked(blockerId: string, blockedId: string): Promise<boolean> {
+  const supabase = createClient()
+  const { data } = await supabase
+    .from('user_blocks')
+    .select('blocker_id')
+    .eq('blocker_id', blockerId)
+    .eq('blocked_id', blockedId)
+    .maybeSingle()
+  return !!data
+}
+
+export async function reportUser(input: {
+  reporterId: string
+  reportedId: string
+  reason: 'spam' | 'harassment' | 'inappropriate' | 'other'
+  contextType?: 'message' | 'profile' | 'listing' | 'other'
+  contextId?: string
+}): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase.from('user_reports').insert({
+    reporter_id: input.reporterId,
+    reported_id: input.reportedId,
+    reason: input.reason,
+    context_type: input.contextType ?? 'profile',
+    context_id: input.contextId ?? null,
+  })
+  if (error) throw error
+}
+
+export async function getConversationReads(conversationId: string): Promise<Record<string, string>> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('conversation_reads')
+    .select('user_id, last_read_at')
+    .eq('conversation_id', conversationId)
+  if (error) throw error
+  return Object.fromEntries((data ?? []).map((r) => [r.user_id as string, r.last_read_at as string]))
 }

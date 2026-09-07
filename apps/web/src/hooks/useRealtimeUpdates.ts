@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQueryClient, type QueryClient } from '@tanstack/react-query'
 import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
@@ -206,6 +206,61 @@ export function useMessagingRealtime(conversationId?: string) {
 
     return unsubscribe
   }, [queryClient, conversationId])
+}
+
+/**
+ * "Yazıyor…" göstergesi. Postgres tablosuna hiç dokunmadan, Supabase
+ * Realtime Broadcast ile geçici (kalıcı olmayan) bir "typing" sinyali
+ * yayınlar/dinler — bu bir DB tablosu gerektirmez, sadece bir kanal.
+ * `sendTyping()` en fazla 2 saniyede bir gerçek broadcast gönderir
+ * (composer'daki her tuş vuruşunda ağı boğmamak için); alıcı tarafta bir
+ * sinyal geldikten 3 saniye sonra "yazıyor" durumu otomatik temizlenir
+ * (karşı taraf yazmayı bıraktığında ayrı bir "durdu" sinyaline gerek kalmaz).
+ */
+export function useTypingIndicator(conversationId: string) {
+  const [typingUserIds, setTypingUserIds] = useState<string[]>([])
+  const channelRef = useRef<RealtimeChannel | null>(null)
+  const clearTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
+  const lastSentRef = useRef(0)
+
+  useEffect(() => {
+    if (!isSupabaseConfigured || !conversationId) return
+    const supabase = createClient()
+    const channel = supabase.channel(`typing-${conversationId}`, { config: { broadcast: { self: false } } })
+
+    channel
+      .on('broadcast', { event: 'typing' }, (message) => {
+        const typingUserId = (message.payload as { userId?: string } | undefined)?.userId
+        if (!typingUserId || typingUserId === useAuthStore.getState().userId) return
+
+        setTypingUserIds((prev) => (prev.includes(typingUserId) ? prev : [...prev, typingUserId]))
+
+        if (clearTimeoutsRef.current[typingUserId]) clearTimeout(clearTimeoutsRef.current[typingUserId])
+        clearTimeoutsRef.current[typingUserId] = setTimeout(() => {
+          setTypingUserIds((prev) => prev.filter((id) => id !== typingUserId))
+        }, 3000)
+      })
+      .subscribe()
+
+    channelRef.current = channel
+
+    return () => {
+      supabase.removeChannel(channel)
+      Object.values(clearTimeoutsRef.current).forEach(clearTimeout)
+      channelRef.current = null
+    }
+  }, [conversationId])
+
+  const sendTyping = useCallback(() => {
+    const now = Date.now()
+    if (now - lastSentRef.current < 2000) return
+    lastSentRef.current = now
+    const userId = useAuthStore.getState().userId
+    if (!userId) return
+    void channelRef.current?.send({ type: 'broadcast', event: 'typing', payload: { userId } })
+  }, [])
+
+  return { typingUserIds, sendTyping }
 }
 
 /**

@@ -1,10 +1,11 @@
 'use client'
 
-import { Pencil, MessageCircle } from 'lucide-react'
+import { Pencil } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { LinkButton } from './ui'
+import { StartConversationButton } from './messaging/StartConversationButton'
 
-export function ProfileHeaderActions({ username }: { username: string }) {
+export function ProfileHeaderActions({ userId, username }: { userId: string; username: string }) {
   const myUsername = useAuthStore((s) => s.profile?.username)
 
   if (myUsername === username) {
@@ -16,10 +17,5 @@ export function ProfileHeaderActions({ username }: { username: string }) {
     )
   }
 
-  return (
-    <LinkButton href="/giris">
-      <MessageCircle className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-      Mesaj at
-    </LinkButton>
-  )
+  return <StartConversationButton otherUserId={userId} label="Mesaj At" />
 }
