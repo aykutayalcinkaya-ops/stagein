@@ -139,8 +139,8 @@ export function VideoFeed({ startVideoId }: { startVideoId?: string }) {
         <div className="flex h-full items-center justify-center px-4">
           <EmptyState
             title="Burada henüz video yok"
-            description="Bu şehirde henüz kimse video yüklememiş. İlk sen ol — uygulamayı indir ve sahneye çık."
-            action={<LinkButton href="/#indir">Uygulamayı İndir</LinkButton>}
+            description="Bu şehirde henüz kimse video yüklememiş. İlk sen ol — sahneye çık."
+            action={<LinkButton href="/kesfet/yukle">Video Ekle</LinkButton>}
           />
         </div>
       ) : (

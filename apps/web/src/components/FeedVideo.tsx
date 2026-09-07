@@ -3,9 +3,8 @@
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { motion } from 'motion/react'
-import { Disc3, Heart, MessageCircle, Music2, Send, Volume2, VolumeX } from 'lucide-react'
+import { Disc3, Heart, Music2, Send, Volume2, VolumeX } from 'lucide-react'
 import type { ReactionType, Video } from '@stagein/shared'
-import { REACTION_EMOJIS } from '@stagein/shared'
 import { useVideoToggleReaction } from '@/hooks/usePostReactions'
 import { useToggleVideoShare } from '@/hooks/usePostShares'
 import { useVideoSource } from '@/hooks/useVideoSource'
@@ -97,17 +96,15 @@ function VideoReactionPanel({ video }: { video: Video }) {
           currentReaction={myReaction}
           isLoading={isPending}
           onSelect={quickToggle}
+          variant="icon"
         />
       </div>
+      {/* Diğer aksiyon ikonlarıyla (Cevaplar/Paylaş) aynı "ikon + sade sayı"
+          düzeni — önceden burada REACTION_EMOJIS'ten renkli emoji karakterleri
+          sayının yanına ekleniyordu, bu da tek bir beğeni ikonuyla (üstteki
+          daire) çakışıp tutarsız/karışık duruyordu. */}
       {totalReactions > 0 ? (
-        <span className="flex items-center gap-0.5 text-xs font-semibold text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]">
-          {topReactions.map(([reaction]) => (
-            <span key={reaction} className="leading-none">
-              {REACTION_EMOJIS[reaction]}
-            </span>
-          ))}
-          {totalReactions}
-        </span>
+        <span className="text-xs font-semibold text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]">{totalReactions}</span>
       ) : null}
     </div>
   )
@@ -297,10 +294,6 @@ export function FeedVideo({ video }: { video: Video }) {
               onShareToWall={(caption) => toggleShare({ videoId: video.id, shared: true, caption })}
             />
           </div>
-
-          <IconButton label="Cevaplar" count={0}>
-            <MessageCircle className="h-5 w-5" strokeWidth={1.8} />
-          </IconButton>
 
           {author ? (
             <IconButton label="Mesaj at">

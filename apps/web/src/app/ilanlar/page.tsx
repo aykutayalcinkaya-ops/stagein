@@ -53,11 +53,16 @@ export default async function IlanlarPage({ searchParams }: PageProps) {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-16">
-      <header className="mb-10">
-        <h1 className="text-4xl font-black tracking-tight sm:text-5xl">İlanlar</h1>
-        <p className="mt-4 max-w-2xl text-lg text-text-secondary">
-          Grup arayanlar, session arayanlar, ders verenler. Şehrine ve enstrümanına göre filtrele.
-        </p>
+      <header className="mb-10 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-4xl font-black tracking-tight sm:text-5xl">İlanlar</h1>
+          <p className="mt-4 max-w-2xl text-lg text-text-secondary">
+            Grup arayanlar, session arayanlar, ders verenler. Şehrine ve enstrümanına göre filtrele.
+          </p>
+        </div>
+        <LinkButton href="/ilanlar/yeni" variant="primary" className="shrink-0">
+          İlan Oluştur
+        </LinkButton>
       </header>
 
       <Suspense fallback={<Skeleton className="mb-8 h-32 w-full" />}>
@@ -67,8 +72,8 @@ export default async function IlanlarPage({ searchParams }: PageProps) {
       {listings.length === 0 ? (
         <EmptyState
           title="Bu filtrelerle ilan bulunamadı"
-          description="Filtreleri gevşetmeyi dene ya da ilanını uygulamadan yayınla — arayan seni bulsun."
-          action={<LinkButton href="/#indir">Uygulamayı İndir</LinkButton>}
+          description="Filtreleri gevşetmeyi dene ya da kendi ilanını yayınla — arayan seni bulsun."
+          action={<LinkButton href="/ilanlar/yeni">İlan Oluştur</LinkButton>}
         />
       ) : (
         <FadeInSection>

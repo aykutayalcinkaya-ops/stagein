@@ -47,16 +47,21 @@ export default async function PazarPage({ searchParams }: PageProps) {
           ) : null}
         </div>
 
-        <Suspense fallback={<div className="h-12 w-44 rounded-lg border border-border bg-card" />}>
-          <CityFilter />
-        </Suspense>
+        <div className="flex shrink-0 items-center gap-3">
+          <Suspense fallback={<div className="h-12 w-44 rounded-lg border border-border bg-card" />}>
+            <CityFilter />
+          </Suspense>
+          <LinkButton href="/pazar/yeni" variant="primary" className="shrink-0">
+            İlan Ver
+          </LinkButton>
+        </div>
       </header>
 
       {items.length === 0 ? (
         <EmptyState
-          title="Şu an ilan yok"
-          description="Pazar Faz 2 ile birlikte açılıyor. İlk ilanları yayınlamak istersen uygulamadan bize ulaş."
-          action={<LinkButton href="/#indir">Uygulamayı İndir</LinkButton>}
+          title="Bu şehirde henüz ilan yok"
+          description="Filtreyi genişletmeyi dene ya da kendi ekipman ilanını yayınla — ilk ilan sen ol."
+          action={<LinkButton href="/pazar/yeni">İlan Ver</LinkButton>}
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

@@ -22,6 +22,14 @@ interface ReactionPickerProps {
    * (ör. `FeedVideo.tsx`) görünüm hiç değişmez.
    */
   totalCount?: number
+  /**
+   * 'icon': tetikleyici, ebeveyninin (ör. Keşfet'teki 44×44 dairesel glass
+   * chip) tamamını dolduran, dolgusuz, tek ikon/emoji gösteren bir düğmeye
+   * dönüşür — sayaç ayrıca dışarıda (ör. IconButton'ın count metni ile aynı
+   * stilde) gösterilmelidir. Varsayılan 'default': PostCard'daki pill/metin
+   * düzeni.
+   */
+  variant?: 'default' | 'icon'
 }
 
 /**
@@ -30,7 +38,15 @@ interface ReactionPickerProps {
  * tıklamak — kaldırma davranışı üst bileşende (onSelect çağrısına göre
  * mevcut reaksiyonla karşılaştırarak) yönetilir.
  */
-export function ReactionPicker({ postId, videoId, currentReaction, isLoading, onSelect, totalCount }: ReactionPickerProps) {
+export function ReactionPicker({
+  postId,
+  videoId,
+  currentReaction,
+  isLoading,
+  onSelect,
+  totalCount,
+  variant = 'default',
+}: ReactionPickerProps) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
 
@@ -61,7 +77,12 @@ export function ReactionPicker({ postId, videoId, currentReaction, isLoading, on
   const triggerLabel = currentReaction ? REACTION_LABELS[currentReaction] : 'Beğen'
 
   return (
-    <div ref={rootRef} className="relative inline-block" data-post-id={postId} data-video-id={videoId}>
+    <div
+      ref={rootRef}
+      className={variant === 'icon' ? 'relative h-full w-full' : 'relative inline-block'}
+      data-post-id={postId}
+      data-video-id={videoId}
+    >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -71,16 +92,18 @@ export function ReactionPicker({ postId, videoId, currentReaction, isLoading, on
         aria-label={triggerLabel}
         title={triggerLabel}
         className={cn(
-          'flex items-center gap-1.5 rounded-full px-2 py-1 text-sm font-medium transition-colors duration-150 disabled:opacity-50',
-          currentReaction ? 'text-accent' : 'text-muted hover:text-white'
+          variant === 'icon'
+            ? 'flex h-full w-full items-center justify-center text-white transition-transform duration-180 active:scale-90 disabled:opacity-50'
+            : 'flex items-center gap-1.5 rounded-full px-2 py-1 text-sm font-medium transition-colors duration-150 disabled:opacity-50',
+          variant === 'default' && (currentReaction ? 'text-accent' : 'text-muted hover:text-white')
         )}
       >
         {triggerEmoji ? (
-          <span className="text-base leading-none">{triggerEmoji}</span>
+          <span className={variant === 'icon' ? 'text-lg leading-none' : 'text-base leading-none'}>{triggerEmoji}</span>
         ) : (
-          <Heart className="h-4 w-4" strokeWidth={1.8} />
+          <Heart className={variant === 'icon' ? 'h-5 w-5' : 'h-4 w-4'} strokeWidth={1.8} />
         )}
-        {totalCount !== undefined ? (totalCount > 0 ? totalCount : 'Beğen') : null}
+        {variant === 'default' && totalCount !== undefined ? (totalCount > 0 ? totalCount : 'Beğen') : null}
       </button>
 
       <AnimatePresence>
