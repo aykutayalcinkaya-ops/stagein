@@ -3,7 +3,8 @@ import { Suspense } from 'react'
 import type { ListingType } from '@stagein/shared'
 import { ListingCard } from '@/components/ListingCard'
 import { ListingFilters } from '@/components/ListingFilters'
-import { EmptyState, LinkButton } from '@/components/ui'
+import { FadeInSection } from '@/components/FadeInSection'
+import { EmptyState, LinkButton, Skeleton } from '@/components/ui'
 import { getListings, type ListingFilters as Filters } from '@/lib/data'
 import { LISTING_TYPE_LABELS } from '@/lib/site'
 
@@ -59,7 +60,7 @@ export default async function IlanlarPage({ searchParams }: PageProps) {
         </p>
       </header>
 
-      <Suspense fallback={<div className="mb-8 h-32 rounded-xl border border-border bg-card" />}>
+      <Suspense fallback={<Skeleton className="mb-8 h-32 w-full" />}>
         <ListingFilters />
       </Suspense>
 
@@ -70,14 +71,14 @@ export default async function IlanlarPage({ searchParams }: PageProps) {
           action={<LinkButton href="/#indir">Uygulamayı İndir</LinkButton>}
         />
       ) : (
-        <>
+        <FadeInSection>
           <p className="mb-4 text-sm text-muted">{listings.length} ilan listeleniyor</p>
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {listings.map((listing) => (
               <ListingCard key={listing.id} listing={listing} />
             ))}
           </div>
-        </>
+        </FadeInSection>
       )}
     </div>
   )

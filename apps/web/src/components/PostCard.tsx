@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import * as Dialog from '@radix-ui/react-dialog'
 import { AnimatePresence, motion } from 'motion/react'
-import { Flag, Link2, MessageCircle, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import { Flag, ImageOff, Link2, MessageCircle, MoreHorizontal, Pencil, Play, Trash2, Video } from 'lucide-react'
 import type { Post, PostReportReason, ReactionType } from '@stagein/shared'
 import { REACTION_EMOJIS } from '@stagein/shared'
 import { formatRelative, sortedReactionEntries, sumReactions, SITE_URL } from '@/lib/site'
@@ -15,6 +15,7 @@ import { useTogglePostReaction } from '@/hooks/usePostReactions'
 import { useTogglePostShare } from '@/hooks/usePostShares'
 import { useVideoSource } from '@/hooks/useVideoSource'
 import { getPostComments } from '@/lib/api'
+import { MediaPlaceholder } from './MediaPlaceholder'
 import { UserAvatar } from './UserAvatar'
 import { ReactionPicker } from './ReactionPicker'
 import { CommentThread } from './CommentThread'
@@ -57,7 +58,7 @@ function AutoplayPostVideo({ videoId, thumbnailUrl, video }: { videoId: string; 
     <Link
       ref={containerRef}
       href={`/kesfet?v=${videoId}`}
-      className="relative mt-4 flex aspect-video w-full items-center justify-center overflow-hidden rounded-xl bg-black"
+      className="group relative mt-4 flex aspect-video w-full items-center justify-center overflow-hidden rounded-xl bg-black"
     >
       {src ? (
         <video
@@ -73,13 +74,24 @@ function AutoplayPostVideo({ videoId, thumbnailUrl, video }: { videoId: string; 
       ) : thumbnailUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={thumbnailUrl} alt="" className="absolute inset-0 h-full w-full object-cover opacity-70" />
-      ) : null}
-      <span className="relative flex h-14 w-14 items-center justify-center rounded-full bg-white/90 text-dark">
-        <svg viewBox="0 0 24 24" fill="currentColor" className="ml-1 h-6 w-6">
-          <path d="M8 5v14l11-7z" />
-        </svg>
+      ) : (
+        <MediaPlaceholder icon={Video} label="Video yükleniyor" className="absolute inset-0" />
+      )}
+      <span className="relative flex h-14 w-14 items-center justify-center rounded-full bg-white/90 text-dark shadow-lg transition-transform duration-180 group-hover:scale-105">
+        <Play className="ml-1 h-6 w-6" fill="currentColor" strokeWidth={0} />
       </span>
     </Link>
+  )
+}
+
+/** Tek bir gönderi fotoğrafı — yüklenemezse (kırık/kaldırılmış URL) düz siyah
+ * kutu yerine markalı `MediaPlaceholder` gösterir. */
+function PostPhoto({ url }: { url: string }) {
+  const [failed, setFailed] = useState(false)
+  if (failed) return <MediaPlaceholder icon={ImageOff} label="Görsel yüklenemedi" className="aspect-square w-full" />
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={url} alt="" loading="lazy" className="aspect-square w-full object-cover" onError={() => setFailed(true)} />
   )
 }
 
@@ -264,7 +276,7 @@ export function PostCard({ post }: { post: Post }) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      className="rounded-2xl border border-border bg-card/80 p-5 backdrop-blur-md transition-colors duration-180 hover:border-border-strong sm:p-6"
+      className="rounded-2xl border border-border bg-card/80 p-5 shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_16px_32px_-20px_rgba(0,0,0,0.6)] backdrop-blur-md transition-colors duration-180 hover:border-border-strong sm:p-6"
     >
       <header className="flex items-center justify-between gap-3">
         {author ? (
@@ -326,7 +338,7 @@ export function PostCard({ post }: { post: Post }) {
             onChange={(e) => setEditBody(e.target.value)}
             rows={3}
             autoFocus
-            className="resize-none rounded-lg border border-border bg-transparent px-3 py-2 text-[15px] leading-relaxed text-text outline-none placeholder:text-muted"
+            className="resize-none rounded-lg border border-border bg-transparent px-3 py-2 text-[15px] leading-relaxed text-text outline-none transition-colors duration-150 placeholder:text-muted focus:border-primary"
           />
           <div className="flex items-center justify-end gap-2">
             <Button type="button" variant="secondary" className="px-4 py-1.5 text-xs" onClick={handleCancelEdit}>
@@ -354,8 +366,7 @@ export function PostCard({ post }: { post: Post }) {
           }`}
         >
           {post.photo_urls.map((url) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img key={url} src={url} alt="" className="aspect-square w-full object-cover" />
+            <PostPhoto key={url} url={url} />
           ))}
         </div>
       ) : null}
@@ -385,14 +396,14 @@ export function PostCard({ post }: { post: Post }) {
             totalCount={totalReactions}
           />
         ) : (
-          <Link href="/giris" className="flex items-center gap-1.5 text-muted hover:text-white">
+          <Link href="/giris" className="flex items-center gap-1.5 text-muted transition-colors duration-150 hover:text-white">
             Beğen
           </Link>
         )}
         <button
           type="button"
           onClick={() => setCommentsOpen((v) => !v)}
-          className="flex items-center gap-1.5 text-muted hover:text-white"
+          className="flex items-center gap-1.5 text-muted transition-colors duration-150 hover:text-white"
         >
           <MessageCircle className="h-4 w-4" strokeWidth={1.8} />
           {post.comment_count > 0 ? post.comment_count : 'Yorum'}
@@ -435,9 +446,13 @@ export function PostCard({ post }: { post: Post }) {
                 value={commentBody}
                 onChange={(e) => setCommentBody(e.target.value)}
                 placeholder="Yorum yaz…"
-                className="flex-1 rounded-lg border border-border bg-transparent px-3 py-2 text-sm text-text outline-none placeholder:text-muted"
+                className="flex-1 rounded-lg border border-border bg-transparent px-3 py-2 text-sm text-text outline-none transition-colors duration-150 placeholder:text-muted focus:border-primary"
               />
-              <button type="submit" disabled={isCommenting || !commentBody.trim()} className="text-sm font-semibold text-primary disabled:opacity-50">
+              <button
+                type="submit"
+                disabled={isCommenting || !commentBody.trim()}
+                className="text-sm font-semibold text-primary transition-colors duration-150 hover:text-primary-dim disabled:opacity-50"
+              >
                 Gönder
               </button>
             </form>

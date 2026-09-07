@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { MarketplaceItem } from '@stagein/shared'
 import { formatPrice, formatRelative } from '@/lib/site'
+import { MediaPlaceholder } from '@/components/MediaPlaceholder'
 import { Chip } from './ui'
 
 export function MarketplaceCard({ item }: { item: MarketplaceItem }) {
@@ -20,7 +21,7 @@ export function MarketplaceCard({ item }: { item: MarketplaceItem }) {
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-xs text-muted">Görsel yok</div>
+          <MediaPlaceholder />
         )}
       </div>
 

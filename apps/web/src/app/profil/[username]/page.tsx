@@ -1,8 +1,10 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Chip, EmptyState } from '@/components/ui'
+import { ArrowRight, Award, Briefcase, MessageSquare, VideoOff, Video as VideoIcon } from 'lucide-react'
+import { Card, Chip, EmptyState } from '@/components/ui'
 import { UserAvatar } from '@/components/UserAvatar'
+import { MediaPlaceholder } from '@/components/MediaPlaceholder'
 import { ProfileHeaderActions } from '@/components/ProfileHeaderActions'
 import { ProfileLinkList } from '@/components/ProfileLinkList'
 import { PostCard } from '@/components/PostCard'
@@ -106,7 +108,7 @@ export default async function ProfilPage({ params }: PageProps) {
 
       {profile && (profile.instruments.length > 0 || profile.genres.length > 0) ? (
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
-          <div className="rounded-xl border border-border bg-card p-5">
+          <Card>
             <p className="text-xs uppercase tracking-wider text-muted">Enstrümanlar</p>
             <div className="mt-3 flex flex-wrap gap-2">
               {profile.instruments.length ? (
@@ -115,8 +117,8 @@ export default async function ProfilPage({ params }: PageProps) {
                 <span className="text-sm text-text-secondary">Belirtilmedi</span>
               )}
             </div>
-          </div>
-          <div className="rounded-xl border border-border bg-card p-5">
+          </Card>
+          <Card>
             <p className="text-xs uppercase tracking-wider text-muted">Tarzlar</p>
             <div className="mt-3 flex flex-wrap gap-2">
               {profile.genres.length ? (
@@ -125,12 +127,15 @@ export default async function ProfilPage({ params }: PageProps) {
                 <span className="text-sm text-text-secondary">Belirtilmedi</span>
               )}
             </div>
-          </div>
+          </Card>
         </div>
       ) : null}
 
       <section className="mt-14">
-        <h2 className="text-2xl font-bold tracking-tight">Videolar</h2>
+        <h2 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
+          <VideoIcon className="h-5 w-5 text-primary" strokeWidth={1.8} aria-hidden="true" />
+          Videolar
+        </h2>
         {videos.length === 0 ? (
           <div className="mt-6">
             <EmptyState title="Henüz video yok" description="Bu müzisyen henüz performans videosu paylaşmamış." />
@@ -138,13 +143,13 @@ export default async function ProfilPage({ params }: PageProps) {
         ) : (
           <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {videos.map((video) => (
-              <div key={video.id} className="overflow-hidden rounded-xl border border-border bg-card">
-                <div className="aspect-[9/16] w-full bg-surface">
+              <div key={video.id} className="overflow-hidden rounded-xl border border-border bg-card transition-colors duration-180 hover:border-border-strong">
+                <div className="aspect-[9/16] w-full">
                   {video.thumbnail_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={video.thumbnail_url} alt="" className="h-full w-full object-cover" />
                   ) : (
-                    <div className="flex h-full items-center justify-center text-xs text-muted">Önizleme yok</div>
+                    <MediaPlaceholder icon={VideoOff} label="Önizleme yok" className="h-full w-full" />
                   )}
                 </div>
                 <div className="flex items-center justify-between px-3 py-2 text-xs text-muted">
@@ -158,7 +163,10 @@ export default async function ProfilPage({ params }: PageProps) {
       </section>
 
       <section className="mt-14">
-        <h2 className="text-2xl font-bold tracking-tight">Gönderiler</h2>
+        <h2 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
+          <MessageSquare className="h-5 w-5 text-primary" strokeWidth={1.8} aria-hidden="true" />
+          Gönderiler
+        </h2>
         {posts.length === 0 ? (
           <div className="mt-6">
             <EmptyState title="Henüz gönderi yok" description="Bu müzisyen henüz duvarda paylaşım yapmamış." />
@@ -174,13 +182,16 @@ export default async function ProfilPage({ params }: PageProps) {
 
       {listings.length ? (
         <section className="mt-14">
-          <h2 className="text-2xl font-bold tracking-tight">Açık ilanlar</h2>
+          <h2 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
+            <Briefcase className="h-5 w-5 text-primary" strokeWidth={1.8} aria-hidden="true" />
+            Açık ilanlar
+          </h2>
           <div className="mt-6 flex flex-col gap-3">
             {listings.map((listing) => (
               <Link
                 key={listing.id}
                 href={`/ilanlar/${listing.id}`}
-                className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card p-5 transition-colors duration-150 hover:border-primary"
+                className="group flex items-center justify-between gap-4 rounded-2xl border border-border bg-card/80 p-5 shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_16px_32px_-20px_rgba(0,0,0,0.6)] backdrop-blur-sm transition-colors duration-180 hover:border-primary/60"
               >
                 <span>
                   <span className="block font-bold">{listing.title}</span>
@@ -189,7 +200,10 @@ export default async function ProfilPage({ params }: PageProps) {
                     {listing.city ? ` · ${listing.city}` : ''}
                   </span>
                 </span>
-                <span className="text-sm text-text-secondary">Detay</span>
+                <span className="flex items-center gap-1 text-sm font-medium text-text-secondary transition-colors duration-180 group-hover:text-primary">
+                  Detay
+                  <ArrowRight className="h-4 w-4 transition-transform duration-180 group-hover:translate-x-0.5" strokeWidth={2} aria-hidden="true" />
+                </span>
               </Link>
             ))}
           </div>
@@ -198,10 +212,13 @@ export default async function ProfilPage({ params }: PageProps) {
 
       {endorsements.length ? (
         <section className="mt-14">
-          <h2 className="text-2xl font-bold tracking-tight">Referanslar</h2>
+          <h2 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
+            <Award className="h-5 w-5 text-primary" strokeWidth={1.8} aria-hidden="true" />
+            Referanslar
+          </h2>
           <div className="mt-6 flex flex-col gap-3">
             {endorsements.map((e) => (
-              <div key={e.id} className="rounded-xl border border-border bg-card p-5">
+              <Card key={e.id}>
                 <div className="flex items-center gap-3">
                   <UserAvatar
                     name={e.from_user?.full_name}
@@ -215,7 +232,7 @@ export default async function ProfilPage({ params }: PageProps) {
                   <span className="ml-auto text-xs text-muted">{formatDate(e.created_at)}</span>
                 </div>
                 {e.note ? <p className="mt-3 text-sm leading-relaxed text-text-secondary">{e.note}</p> : null}
-              </div>
+              </Card>
             ))}
           </div>
         </section>

@@ -31,6 +31,7 @@ export function OfferModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const discount = Math.round(((currentPrice - offerAmount) / currentPrice) * 100);
+  const presetDiscounts = [10, 20, 30];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,6 +107,18 @@ export function OfferModal({
                     {discount > 0 && (
                       <p className="mt-2 text-sm text-green-400">Liste fiyatından %{discount} indirim</p>
                     )}
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {presetDiscounts.map((pct) => (
+                        <button
+                          key={pct}
+                          type="button"
+                          onClick={() => setOfferAmount(Math.max(1, Math.floor(currentPrice * (1 - pct / 100))))}
+                          className="min-h-9 rounded-full border border-border-strong px-3 py-1 text-xs font-medium text-text-secondary transition-colors duration-150 hover:border-primary/60 hover:bg-primary/10 hover:text-white"
+                        >
+                          -%{pct}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   <div>

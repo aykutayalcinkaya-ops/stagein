@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { MediaPlaceholder } from '@/components/MediaPlaceholder';
 
 interface ImageGalleryProps {
   images: string[];
@@ -13,8 +14,8 @@ export function ImageGallery({ images, title }: ImageGalleryProps) {
 
   if (!images || images.length === 0) {
     return (
-      <div className="bg-surface rounded-lg w-full aspect-square flex items-center justify-center">
-        <span className="text-muted">Resim bulunmamaktadır</span>
+      <div className="w-full aspect-square overflow-hidden rounded-lg">
+        <MediaPlaceholder label="Bu ilan için henüz görsel eklenmemiş" />
       </div>
     );
   }

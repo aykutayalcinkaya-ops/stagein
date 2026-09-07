@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Share2 } from 'lucide-react'
+import { AnimatePresence, motion } from 'motion/react'
+import { Link2, Repeat2, Send, Share2 } from 'lucide-react'
 import { SITE_URL } from '@/lib/site'
 import { cn } from './ui'
 
@@ -131,83 +132,80 @@ export function ShareMenu({ postId, videoId, onShareToWall, onSendMessage, share
         <span className="text-xs font-semibold [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]">{shareCount}</span>
       ) : null}
 
-      {open ? (
-        <>
-          <div className="fixed inset-0 z-40 hidden bg-black/60 max-sm:block" onClick={close} />
-          <div
-            role="menu"
-            className={cn(
-              'absolute bottom-full right-0 z-50 mb-2 w-64 rounded-2xl border border-border bg-card p-2 shadow-lg',
-              'max-sm:fixed max-sm:inset-x-3 max-sm:bottom-3 max-sm:right-0 max-sm:mb-0 max-sm:w-auto max-sm:rounded-2xl max-sm:p-3'
-            )}
-          >
-            {panel === 'menu' ? (
-              <div className="flex flex-col">
-                <button
-                  type="button"
-                  onClick={() => setPanel('caption')}
-                  className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-text hover:bg-white/5"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-4 w-4 shrink-0">
-                    <path d="M3 3h18v18H3z" />
-                    <path d="M8 12h8M8 8h8M8 16h5" />
-                  </svg>
-                  Duvarıma Paylaş
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSendMessage}
-                  className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-text hover:bg-white/5"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-4 w-4 shrink-0">
-                    <path d="M22 2 11 13" />
-                    <path d="M22 2 15 22l-4-9-9-4 20-7Z" />
-                  </svg>
-                  Mesaj Olarak Gönder
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCopyLink}
-                  className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-text hover:bg-white/5"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-4 w-4 shrink-0">
-                    <path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1 1" />
-                    <path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1-1" />
-                  </svg>
-                  Bağlantıyı Kopyala
-                </button>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2 p-1">
-                <textarea
-                  value={caption}
-                  onChange={(e) => setCaption(e.target.value)}
-                  placeholder="Bir açıklama ekle (opsiyonel)…"
-                  rows={3}
-                  autoFocus
-                  className="resize-none rounded-lg border border-border bg-transparent px-3 py-2 text-sm text-text outline-none placeholder:text-muted"
-                />
-                <div className="flex items-center justify-end gap-2">
+      <AnimatePresence>
+        {open ? (
+          <>
+            <div className="fixed inset-0 z-40 hidden bg-black/60 max-sm:block" onClick={close} />
+            <motion.div
+              role="menu"
+              initial={{ opacity: 0, scale: 0.95, y: 6 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 6 }}
+              transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
+              className={cn(
+                'absolute bottom-full right-0 z-50 mb-2 w-64 rounded-2xl border border-border bg-card p-2 shadow-lg',
+                'max-sm:fixed max-sm:inset-x-3 max-sm:bottom-3 max-sm:right-0 max-sm:mb-0 max-sm:w-auto max-sm:rounded-2xl max-sm:p-3'
+              )}
+            >
+              {panel === 'menu' ? (
+                <div className="flex flex-col">
                   <button
                     type="button"
-                    onClick={() => setPanel('menu')}
-                    className="rounded-full px-3 py-1.5 text-xs font-medium text-muted hover:text-white"
+                    onClick={() => setPanel('caption')}
+                    className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-text transition-colors duration-150 hover:bg-white/5"
                   >
-                    Vazgeç
+                    <Repeat2 className="h-4 w-4 shrink-0" strokeWidth={1.8} />
+                    Duvarıma Paylaş
                   </button>
                   <button
                     type="button"
-                    onClick={handleShareToWall}
-                    className="rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-white hover:bg-primary-dim"
+                    onClick={handleSendMessage}
+                    className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-text transition-colors duration-150 hover:bg-white/5"
                   >
-                    Paylaş
+                    <Send className="h-4 w-4 shrink-0" strokeWidth={1.8} />
+                    Mesaj Olarak Gönder
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCopyLink}
+                    className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-text transition-colors duration-150 hover:bg-white/5"
+                  >
+                    <Link2 className="h-4 w-4 shrink-0" strokeWidth={1.8} />
+                    Bağlantıyı Kopyala
                   </button>
                 </div>
-              </div>
-            )}
-          </div>
-        </>
-      ) : null}
+              ) : (
+                <div className="flex flex-col gap-2 p-1">
+                  <textarea
+                    value={caption}
+                    onChange={(e) => setCaption(e.target.value)}
+                    placeholder="Bir açıklama ekle (opsiyonel)…"
+                    rows={3}
+                    autoFocus
+                    className="resize-none rounded-lg border border-border bg-transparent px-3 py-2 text-sm text-text outline-none transition-colors duration-150 placeholder:text-muted focus:border-primary"
+                  />
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPanel('menu')}
+                      className="rounded-full px-3 py-1.5 text-xs font-medium text-muted transition-colors duration-150 hover:text-white"
+                    >
+                      Vazgeç
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleShareToWall}
+                      className="rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-white transition-colors duration-150 hover:bg-primary-dim"
+                    >
+                      Paylaş
+                    </button>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </>
+        ) : null}
+      </AnimatePresence>
 
       {toast ? (
         <div className="pointer-events-none fixed inset-x-0 bottom-6 z-[60] flex justify-center">

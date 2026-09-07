@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { motion } from 'motion/react';
 import { Star, SearchX } from 'lucide-react';
 import type { FreelancePackage } from '@stagein/shared';
@@ -9,6 +10,7 @@ import { PackageSelector } from '@/components/freelance/PackageSelector';
 import { PackageComparisonTable } from '@/components/freelance/PackageComparisonTable';
 import { CardSkeleton, useTimeout } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
+import { MediaPlaceholder } from '@/components/MediaPlaceholder';
 import { UserAvatar } from '@/components/UserAvatar';
 import { formatDateTr } from '@/lib/format';
 import { useFreelanceGig, useFreelanceGigReviews, useCreateFreelanceOrder } from '@/hooks/useFreelance';
@@ -125,6 +127,15 @@ export function GigDetailContent({ gigId }: { gigId: string }) {
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           {/* Main Content */}
           <div className="space-y-8 lg:col-span-2">
+            {/* Cover Image */}
+            <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl border border-border bg-surface">
+              {gig.cover_image ? (
+                <Image src={gig.cover_image} alt={gig.title} fill className="object-cover" priority />
+              ) : (
+                <MediaPlaceholder label="Kapak görseli yok" />
+              )}
+            </div>
+
             {/* Gig Title & Rating */}
             <div className="rounded-lg border border-border bg-card p-6">
               <h1 className="mb-4 text-3xl font-bold text-text">{gig.title}</h1>

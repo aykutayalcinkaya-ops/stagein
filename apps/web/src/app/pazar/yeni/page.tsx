@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'motion/react';
+import { Tag, LayoutGrid, Wrench, Banknote, FileText, ImagePlus, X } from 'lucide-react';
 import { CITIES, MARKETPLACE_CATEGORIES, CONDITION_LABELS } from '@stagein/shared';
 import type { MarketplaceItem } from '@stagein/shared';
 import { useCreateMarketplaceItem } from '@/hooks/useMarketplace';
@@ -68,6 +69,14 @@ export default function NewMarketplaceItemPage() {
     }));
   };
 
+  const photoPreviews = useMemo(() => formData.photos.map((file) => URL.createObjectURL(file)), [formData.photos]);
+  useEffect(() => {
+    return () => {
+      photoPreviews.forEach((url) => URL.revokeObjectURL(url));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photoPreviews]);
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!userId) return;
@@ -109,7 +118,10 @@ export default function NewMarketplaceItemPage() {
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Başlık */}
           <div className={sectionClass}>
-            <label className={labelClass}>Ürün Başlığı</label>
+            <label className={`${labelClass} flex items-center gap-2`}>
+              <Tag className="h-4 w-4 text-primary" strokeWidth={1.8} aria-hidden="true" />
+              Ürün Başlığı
+            </label>
             <input
               type="text"
               name="title"

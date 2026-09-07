@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'motion/react';
-import { Package, SearchX } from 'lucide-react';
+import { Package, SearchX, Check, AlertTriangle } from 'lucide-react';
 import { FREELANCE_ORDER_STATUS_LABELS } from '@stagein/shared';
 import { Button } from '@/components/ui';
 import { CardSkeleton, useTimeout } from '@/components/Skeleton';
@@ -74,6 +74,9 @@ export function OrderWorkspaceContent({ orderId }: { orderId: string }) {
 
   const isBuyer = userId === order.buyer_id;
   const status = order.status;
+  const HAPPY_PATH = ['requirements_pending', 'in_progress', 'delivered', 'completed'] as const;
+  const currentStepIndex = HAPPY_PATH.indexOf(status as (typeof HAPPY_PATH)[number]);
+  const isExceptional = currentStepIndex === -1;
 
   return (
     <motion.div
@@ -126,14 +129,56 @@ export function OrderWorkspaceContent({ orderId }: { orderId: string }) {
             {/* Status Timeline */}
             <div className="rounded-lg border border-border bg-card p-6">
               <h2 className="mb-6 text-2xl font-bold text-text">Durum</h2>
-              <div className="space-y-4">
-                {Object.entries(FREELANCE_ORDER_STATUS_LABELS).map(([key, label]) => (
-                  <div key={key} className="flex items-center gap-3">
-                    <div className={`h-4 w-4 rounded-full ${status === key ? 'bg-primary' : 'bg-white/10'}`} />
-                    <span className={status === key ? 'font-bold text-primary' : 'text-text-secondary'}>{label}</span>
-                  </div>
-                ))}
+              <div className="relative space-y-5 pl-1">
+                {HAPPY_PATH.map((key, idx) => {
+                  const isDone = !isExceptional && idx < currentStepIndex;
+                  const isCurrent = !isExceptional && idx === currentStepIndex;
+                  const isLast = idx === HAPPY_PATH.length - 1;
+                  return (
+                    <div key={key} className="relative flex items-start gap-3">
+                      {!isLast ? (
+                        <span
+                          className={`absolute left-[9px] top-6 h-[calc(100%-8px)] w-px ${
+                            isDone ? 'bg-primary' : 'bg-white/10'
+                          }`}
+                          aria-hidden="true"
+                        />
+                      ) : null}
+                      <div
+                        className={`z-10 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
+                          isDone
+                            ? 'bg-primary text-white'
+                            : isCurrent
+                              ? 'bg-primary text-white shadow-[0_0_0_4px_color-mix(in_oklab,var(--color-primary)_25%,transparent)]'
+                              : 'bg-white/10 text-transparent'
+                        }`}
+                      >
+                        {isDone ? <Check className="h-3 w-3" strokeWidth={3} /> : null}
+                      </div>
+                      <span
+                        className={`pt-0.5 text-sm ${
+                          isCurrent ? 'font-bold text-primary' : isDone ? 'text-text' : 'text-text-secondary'
+                        }`}
+                      >
+                        {FREELANCE_ORDER_STATUS_LABELS[key]}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
+
+              {isExceptional ? (
+                <div
+                  className={`mt-6 flex items-center gap-3 rounded-lg border p-4 ${
+                    status === 'revision_requested'
+                      ? 'border-amber-500/30 bg-amber-500/10 text-amber-300'
+                      : 'border-red-500/30 bg-red-500/10 text-red-300'
+                  }`}
+                >
+                  <AlertTriangle className="h-5 w-5 shrink-0" strokeWidth={1.8} aria-hidden="true" />
+                  <p className="font-semibold">{FREELANCE_ORDER_STATUS_LABELS[status]}</p>
+                </div>
+              ) : null}
             </div>
 
             {/* Requirements Section */}

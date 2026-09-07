@@ -4,13 +4,13 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import * as Dialog from '@radix-ui/react-dialog'
 import { AnimatePresence, motion } from 'motion/react'
-import { AlertTriangle, Check, X } from 'lucide-react'
+import { AlertTriangle, Camera, Check, ChevronDown, ChevronUp, LogOut, Plus, Trash2, X } from 'lucide-react'
 import { CITIES, GENRES, INSTRUMENTS } from '@stagein/shared'
 import type { ExperienceLevel } from '@stagein/shared'
 import { createClient } from '@/lib/supabase/client'
 import { deleteOwnAccount, replaceProfileLinks, uploadAvatar, upsertMusicianProfile, upsertUser } from '@/lib/api'
 import { EXPERIENCE_LABELS } from '@/lib/site'
-import { Button, Chip, EmptyState, cn } from '@/components/ui'
+import { Button, Card, Chip, EmptyState, cn } from '@/components/ui'
 import { UserAvatar } from '@/components/UserAvatar'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -226,15 +226,19 @@ export default function AyarlarPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-12">
-      <h1 className="text-3xl font-black tracking-tight">Ayarlar</h1>
+      <h1 className="font-display text-3xl uppercase tracking-tight sm:text-4xl">Ayarlar</h1>
+      <p className="mt-2 text-sm text-text-secondary">Profilini ve hesap tercihlerini buradan yönet.</p>
 
       <div className="mt-8 flex flex-col items-center gap-3">
-        <label className="cursor-pointer">
+        <label className="group relative cursor-pointer">
           <UserAvatar
             url={avatarFile ? URL.createObjectURL(avatarFile) : profile.avatar_url}
             name={fullName || profile.username}
             size={88}
           />
+          <span className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 transition-opacity duration-180 group-hover:opacity-100">
+            <Camera className="h-6 w-6 text-white" strokeWidth={1.8} aria-hidden="true" />
+          </span>
           <input type="file" accept="image/*" className="hidden" onChange={(e) => setAvatarFile(e.target.files?.[0] ?? null)} />
         </label>
         <span className="text-sm font-semibold text-primary">Fotoğrafı değiştir</span>
@@ -308,24 +312,39 @@ export default function AyarlarPage() {
         <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">Linkler</p>
         <div className="flex flex-col gap-2">
           {links.map((link, index) => (
-            <div key={`${link.url}-${index}`} className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
+            <div
+              key={`${link.url}-${index}`}
+              className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 transition-colors duration-150 hover:border-border-strong"
+            >
               <span className="flex-1 truncate text-sm">
                 <span className="font-semibold text-text">{link.label}</span>{' '}
                 <span className="text-muted">{link.url}</span>
               </span>
-              <button type="button" onClick={() => moveLink(index, -1)} disabled={index === 0} className="text-muted disabled:opacity-30">
-                ↑
+              <button
+                type="button"
+                onClick={() => moveLink(index, -1)}
+                disabled={index === 0}
+                aria-label="Yukarı taşı"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition-colors duration-150 hover:bg-white/[0.06] hover:text-text disabled:pointer-events-none disabled:opacity-30"
+              >
+                <ChevronUp className="h-4 w-4" strokeWidth={2} />
               </button>
               <button
                 type="button"
                 onClick={() => moveLink(index, 1)}
                 disabled={index === links.length - 1}
-                className="text-muted disabled:opacity-30"
+                aria-label="Aşağı taşı"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition-colors duration-150 hover:bg-white/[0.06] hover:text-text disabled:pointer-events-none disabled:opacity-30"
               >
-                ↓
+                <ChevronDown className="h-4 w-4" strokeWidth={2} />
               </button>
-              <button type="button" onClick={() => removeLink(index)} className="text-accent">
-                Sil
+              <button
+                type="button"
+                onClick={() => removeLink(index)}
+                aria-label="Linki sil"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-accent transition-colors duration-150 hover:bg-accent/10"
+              >
+                <Trash2 className="h-4 w-4" strokeWidth={2} />
               </button>
             </div>
           ))}
@@ -335,29 +354,39 @@ export default function AyarlarPage() {
             value={newLabel}
             onChange={(e) => setNewLabel(e.target.value)}
             placeholder="Etiket (örn. Instagram)"
-            className="w-1/3 rounded-lg border border-border bg-card px-3 py-2 text-sm text-text outline-none placeholder:text-muted"
+            className="w-1/3 rounded-lg border border-border bg-card px-3 py-2 text-sm text-text outline-none transition-colors duration-150 placeholder:text-muted focus:border-primary"
           />
           <input
             value={newUrl}
             onChange={(e) => setNewUrl(e.target.value)}
             placeholder="https://…"
-            className="flex-1 rounded-lg border border-border bg-card px-3 py-2 text-sm text-text outline-none placeholder:text-muted"
+            className="flex-1 rounded-lg border border-border bg-card px-3 py-2 text-sm text-text outline-none transition-colors duration-150 placeholder:text-muted focus:border-primary"
           />
-          <button type="button" onClick={addLink} className="text-sm font-semibold text-primary">
+          <button
+            type="button"
+            onClick={addLink}
+            className="flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-lg px-3 text-sm font-semibold text-primary transition-colors duration-150 hover:bg-primary/10"
+          >
+            <Plus className="h-4 w-4" strokeWidth={2.2} aria-hidden="true" />
             Ekle
           </button>
         </div>
       </div>
 
-      <label className="mt-6 flex items-center justify-between rounded-xl border border-border bg-card p-4">
+      <label className="mt-6 flex items-center justify-between rounded-xl border border-border bg-card p-4 transition-colors duration-150 hover:border-border-strong">
         <span className="text-sm font-semibold text-text">İşe açığım</span>
-        <input type="checkbox" checked={openToGig} onChange={(e) => setOpenToGig(e.target.checked)} className="h-5 w-5" />
+        <input type="checkbox" checked={openToGig} onChange={(e) => setOpenToGig(e.target.checked)} className="h-5 w-5 accent-primary" />
       </label>
 
       {error ? <p className="mt-4 text-sm text-accent">{error}</p> : null}
 
       <div className="mt-8 flex items-center justify-between">
-        <button type="button" onClick={handleSignOut} className="text-sm font-semibold text-accent">
+        <button
+          type="button"
+          onClick={handleSignOut}
+          className="flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-sm font-semibold text-accent transition-colors duration-150 hover:bg-accent/10"
+        >
+          <LogOut className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
           Çıkış yap
         </button>
         <Button onClick={handleSave} disabled={saving}>
@@ -365,20 +394,28 @@ export default function AyarlarPage() {
         </Button>
       </div>
 
-      <div className="mt-12 rounded-2xl border border-red-500/20 bg-red-500/5 p-5">
-        <p className="text-sm font-semibold text-text">Tehlikeli Bölge</p>
-        <p className="mt-1 text-sm leading-relaxed text-text-secondary">
-          Hesabını sildiğinde tüm gönderilerin, videoların, mesajların ve ilanların kalıcı olarak silinir. Bu işlem
-          geri alınamaz.
-        </p>
+      <Card className="mt-12 border-red-500/20 bg-red-500/5 hover:border-red-500/30">
+        <div className="flex items-start gap-3">
+          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-500/10 text-red-400">
+            <AlertTriangle className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
+          </span>
+          <div>
+            <p className="text-sm font-semibold text-text">Tehlikeli Bölge</p>
+            <p className="mt-1 text-sm leading-relaxed text-text-secondary">
+              Hesabını sildiğinde tüm gönderilerin, videoların, mesajların ve ilanların kalıcı olarak silinir. Bu
+              işlem geri alınamaz.
+            </p>
+          </div>
+        </div>
         <Button
           variant="destructive"
           className="mt-4 px-5 py-2.5 text-sm"
           onClick={() => setDeleteDialogOpen(true)}
         >
+          <Trash2 className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
           Hesabımı Sil
         </Button>
-      </div>
+      </Card>
 
       <DeleteAccountDialog
         open={deleteDialogOpen}

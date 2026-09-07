@@ -2,6 +2,8 @@
 
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
+import { motion } from 'motion/react'
+import { Lock, Mail } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { Button, cn } from './ui'
@@ -9,7 +11,7 @@ import { Button, cn } from './ui'
 type Mode = 'login' | 'register'
 
 const inputClass =
-  'w-full rounded-lg border border-border bg-card px-4 py-3 text-white outline-none transition-colors duration-150 placeholder:text-muted focus:border-primary'
+  'w-full rounded-lg border border-border bg-card py-3 pl-11 pr-4 text-white outline-none transition-colors duration-150 placeholder:text-muted focus:border-primary'
 
 export function AuthForm() {
   const router = useRouter()
@@ -72,17 +74,31 @@ export function AuthForm() {
 
   return (
     <div className="w-full max-w-md">
-      <div className="mb-8 flex gap-2 rounded-lg border border-border p-1">
+      <h1 className="text-center font-display text-2xl uppercase tracking-tight">
+        {mode === 'login' ? 'Tekrar hoş geldin' : 'Aramıza katıl'}
+      </h1>
+      <p className="mt-2 text-center text-sm text-text-secondary">
+        {mode === 'login' ? 'Sahnedeki yerine devam et.' : 'Şehrindeki müzisyenlerle bugün tanış.'}
+      </p>
+
+      <div className="relative mt-6 mb-8 flex gap-1 rounded-lg border border-border bg-white/[0.02] p-1">
         {(['login', 'register'] as Mode[]).map((m) => (
           <button
             key={m}
             type="button"
             onClick={() => setMode(m)}
             className={cn(
-              'flex-1 rounded-md px-4 py-2 text-sm font-semibold transition-colors duration-150',
-              mode === m ? 'bg-primary text-white' : 'text-text-secondary hover:text-white'
+              'relative z-10 flex-1 rounded-md px-4 py-2 text-sm font-semibold transition-colors duration-150',
+              mode === m ? 'text-white' : 'text-text-secondary hover:text-white'
             )}
           >
+            {mode === m ? (
+              <motion.span
+                layoutId="auth-mode-pill"
+                transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                className="absolute inset-0 -z-10 rounded-md bg-primary"
+              />
+            ) : null}
             {m === 'login' ? 'Giriş Yap' : 'Kayıt Ol'}
           </button>
         ))}
@@ -91,27 +107,33 @@ export function AuthForm() {
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <label className="flex flex-col gap-2">
           <span className="text-sm font-medium text-text-secondary">E-posta</span>
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="sen@ornek.com"
-            className={inputClass}
-          />
+          <span className="relative">
+            <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" strokeWidth={1.8} aria-hidden="true" />
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="sen@ornek.com"
+              className={inputClass}
+            />
+          </span>
         </label>
 
         <label className="flex flex-col gap-2">
           <span className="text-sm font-medium text-text-secondary">Şifre</span>
-          <input
-            type="password"
-            required
-            minLength={6}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="En az 6 karakter"
-            className={inputClass}
-          />
+          <span className="relative">
+            <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" strokeWidth={1.8} aria-hidden="true" />
+            <input
+              type="password"
+              required
+              minLength={6}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="En az 6 karakter"
+              className={inputClass}
+            />
+          </span>
         </label>
 
         {error ? <p className="text-sm text-accent">{error}</p> : null}

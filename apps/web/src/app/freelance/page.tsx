@@ -1,9 +1,23 @@
 import { Metadata } from 'next';
+import type { LucideIcon } from 'lucide-react';
+import { SlidersHorizontal, Disc3, Mic2, Mic, PenTool, Wand2, GraduationCap, Sparkles } from 'lucide-react';
 import { FREELANCE_CATEGORIES } from '@stagein/shared';
 import { GigCard } from '@/components/freelance/GigCard';
 import { EmptyState, LinkButton } from '@/components/ui';
 import { FadeInSection } from '@/components/FadeInSection';
 import { getFreelanceGigs } from '@/lib/data';
+
+const CATEGORY_ICONS: Record<string, LucideIcon> = {
+  'mix-mastering': SlidersHorizontal,
+  'beat-production': Disc3,
+  'session-musician': Mic2,
+  voiceover: Mic,
+  songwriting: PenTool,
+  'audio-editing': Wand2,
+  lessons: GraduationCap,
+};
+
+const CATEGORY_NAME_BY_ID = Object.fromEntries(FREELANCE_CATEGORIES.map((cat) => [cat.id, cat.name]));
 
 export const metadata: Metadata = {
   title: 'Freelance Müzik Hizmetleri | StageIn',
@@ -16,39 +30,49 @@ export default async function FreelancePage() {
   return (
     <div className="min-h-screen bg-dark">
       {/* Hero Section */}
-      <FadeInSection className="px-4 py-12">
+      <FadeInSection className="px-4 py-16">
         <div className="mx-auto max-w-6xl">
-          <h1 className="mb-4 text-4xl font-bold text-text md:text-5xl">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.25em] text-accent">Freelance</p>
+          <h1 className="mb-4 font-display text-4xl uppercase leading-[0.95] tracking-tight text-text md:text-5xl">
             Profesyonel Müzik Hizmetleri Pazaryeri
           </h1>
-          <p className="mb-8 text-xl text-text-secondary">
+          <p className="max-w-2xl text-lg leading-relaxed text-text-secondary">
             Müzisyenler, prodüktörler, ses mühendisleri tarafından sunulan kaliteli hizmetleri keşfedin.
           </p>
         </div>
       </FadeInSection>
 
       {/* Categories Section */}
-      <section className="border-t border-border bg-card/40 px-4 py-12">
+      <section className="border-t border-border bg-card/40 px-4 py-14">
         <div className="mx-auto max-w-6xl">
-          <h2 className="mb-8 text-2xl font-bold text-text">Kategoriler</h2>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {FREELANCE_CATEGORIES.map((cat) => (
-              <div
-                key={cat.id}
-                className="rounded-lg border border-border bg-surface p-4 text-left"
-              >
-                <h3 className="font-semibold text-text">{cat.name}</h3>
-              </div>
-            ))}
+          <h2 className="mb-8 font-display text-2xl uppercase tracking-tight text-text">Kategoriler</h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {FREELANCE_CATEGORIES.map((cat) => {
+              const Icon = CATEGORY_ICONS[cat.id] ?? Sparkles;
+              return (
+                <div
+                  key={cat.id}
+                  className="flex items-center gap-3 rounded-2xl border border-border bg-card/80 p-4 shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_16px_32px_-20px_rgba(0,0,0,0.6)] backdrop-blur-sm"
+                >
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+                    <Icon className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
+                  </div>
+                  <h3 className="font-semibold leading-snug text-text">{cat.name}</h3>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
 
       {/* Gigs Section */}
-      <section className="px-4 py-12">
+      <section className="px-4 py-14">
         <div className="mx-auto max-w-6xl">
-          <div className="mb-8 flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-text">Öne Çıkanlar</h2>
+          <div className="mb-8 flex flex-wrap items-end justify-between gap-3">
+            <h2 className="font-display text-2xl uppercase tracking-tight text-text">Öne Çıkanlar</h2>
+            {gigs.length > 0 ? (
+              <span className="text-sm text-text-secondary">{gigs.length} hizmet listelendi</span>
+            ) : null}
           </div>
 
           {gigs.length === 0 ? (
@@ -77,6 +101,7 @@ export default async function FreelancePage() {
                     sellerName={gig.seller?.full_name ?? gig.seller?.username ?? 'Bilinmiyor'}
                     sellerAvatar={gig.seller?.avatar_url}
                     orderQueueCount={gig.order_queue_count}
+                    categoryName={CATEGORY_NAME_BY_ID[gig.category_id]}
                   />
                 );
               })}
@@ -86,9 +111,16 @@ export default async function FreelancePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="border-t border-border bg-primary/10 px-4 py-12">
-        <div className="mx-auto max-w-2xl text-center">
-          <h2 className="mb-4 text-3xl font-bold text-text">
+      <section className="relative overflow-hidden border-t border-border px-4 py-16">
+        <div
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,color-mix(in_oklab,var(--color-primary)_18%,transparent),transparent),radial-gradient(ellipse_60%_50%_at_100%_100%,color-mix(in_oklab,var(--color-accent)_12%,transparent),transparent)]"
+          aria-hidden="true"
+        />
+        <div className="relative mx-auto max-w-2xl text-center">
+          <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-full bg-accent/15 text-accent">
+            <Sparkles className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
+          </div>
+          <h2 className="mb-4 font-display text-3xl uppercase tracking-tight text-text">
             Müzik Hizmeti Sunmak İster Misin?
           </h2>
           <p className="mb-8 text-text-secondary">

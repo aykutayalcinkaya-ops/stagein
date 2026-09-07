@@ -3,17 +3,23 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'motion/react';
+import { GraduationCap, Mic2, Users, X } from 'lucide-react';
 import type { ListingType } from '@stagein/shared';
 import { CITIES, INSTRUMENTS, GENRES, LISTING_TYPE_LABELS } from '@stagein/shared';
 import { useCreateListing } from '@/hooks/useListings';
 import { useAuthStore } from '@/stores/authStore';
 import { FilterDropdown } from '@/components/FilterDropdown';
-import { Button, cn } from '@/components/ui';
+import { Button, Card, cn } from '@/components/ui';
 
 const inputClass =
   'w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-text outline-none transition-colors duration-150 placeholder:text-muted focus:border-primary';
-const sectionClass = 'rounded-xl border border-border bg-card p-6';
 const labelClass = 'mb-3 block text-lg font-bold text-text';
+
+const TYPE_ICONS: Record<string, typeof Users> = {
+  band: Users,
+  session: Mic2,
+  lesson: GraduationCap,
+};
 
 export default function NewListingPage() {
   const router = useRouter();
@@ -100,7 +106,7 @@ export default function NewListingPage() {
 
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Başlık */}
-          <div className={sectionClass}>
+          <Card>
             <label className={labelClass}>İlan Başlığı</label>
             <input
               type="text"
@@ -111,33 +117,37 @@ export default function NewListingPage() {
               required
               className={inputClass}
             />
-          </div>
+          </Card>
 
           {/* Tür */}
-          <div className={sectionClass}>
+          <Card>
             <label className={labelClass}>İlan Türü</label>
             <div className="grid grid-cols-2 gap-3">
-              {listingTypes.map((type) => (
-                <motion.button
-                  key={type.value}
-                  type="button"
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => setFormData((prev) => ({ ...prev, type: type.value as ListingType }))}
-                  className={cn(
-                    'rounded-lg border-2 p-3 text-left font-medium transition-colors duration-150',
-                    formData.type === type.value
-                      ? 'border-primary bg-primary/10 text-white'
-                      : 'border-border bg-surface text-text-secondary hover:border-border-strong'
-                  )}
-                >
-                  {type.label}
-                </motion.button>
-              ))}
+              {listingTypes.map((type) => {
+                const Icon = TYPE_ICONS[type.value] ?? Users;
+                return (
+                  <motion.button
+                    key={type.value}
+                    type="button"
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => setFormData((prev) => ({ ...prev, type: type.value as ListingType }))}
+                    className={cn(
+                      'flex items-center gap-2 rounded-lg border-2 p-3 text-left font-medium transition-colors duration-150',
+                      formData.type === type.value
+                        ? 'border-primary bg-primary/10 text-white'
+                        : 'border-border bg-surface text-text-secondary hover:border-border-strong'
+                    )}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden="true" />
+                    {type.label}
+                  </motion.button>
+                );
+              })}
             </div>
-          </div>
+          </Card>
 
           {/* Şehir */}
-          <div className={sectionClass}>
+          <Card>
             <label className={labelClass}>Şehir</label>
             <select name="city" value={formData.city} onChange={handleChange} required className={inputClass}>
               <option value="">-- Şehir Seç --</option>
@@ -147,10 +157,10 @@ export default function NewListingPage() {
                 </option>
               ))}
             </select>
-          </div>
+          </Card>
 
           {/* Enstrümanlar */}
-          <div className={sectionClass}>
+          <Card>
             <label className={labelClass}>Enstrümanlar</label>
             <FilterDropdown
               label="Enstrüman seç"
@@ -162,10 +172,10 @@ export default function NewListingPage() {
             {formData.instruments.length > 0 ? (
               <p className="mt-3 text-sm text-text-secondary">{formData.instruments.join(', ')}</p>
             ) : null}
-          </div>
+          </Card>
 
           {/* Türler */}
-          <div className={sectionClass}>
+          <Card>
             <label className={labelClass}>Müzik Türleri</label>
             <FilterDropdown
               label="Tarz seç"
@@ -177,10 +187,10 @@ export default function NewListingPage() {
             {formData.genres.length > 0 ? (
               <p className="mt-3 text-sm text-text-secondary">{formData.genres.join(', ')}</p>
             ) : null}
-          </div>
+          </Card>
 
           {/* Açıklama */}
-          <div className={sectionClass}>
+          <Card>
             <label className={labelClass}>Detaylı Açıklama</label>
             <textarea
               name="description"
@@ -191,10 +201,10 @@ export default function NewListingPage() {
               required
               className={inputClass}
             />
-          </div>
+          </Card>
 
           {/* Ücretli Seçenek */}
-          <div className={sectionClass}>
+          <Card>
             <label className="flex cursor-pointer items-center gap-3">
               <input
                 type="checkbox"
@@ -230,11 +240,11 @@ export default function NewListingPage() {
                 </div>
               </div>
             )}
-          </div>
+          </Card>
 
           {/* Etkinlik Tarihi (Venue Tipi İçin) */}
           {formData.type === 'venue' && (
-            <div className={cn(sectionClass, 'space-y-4')}>
+            <Card className="space-y-4">
               <div>
                 <label className={labelClass}>Mekan Adı</label>
                 <input
@@ -257,7 +267,7 @@ export default function NewListingPage() {
                   className={inputClass}
                 />
               </div>
-            </div>
+            </Card>
           )}
 
           {error ? (
@@ -270,6 +280,7 @@ export default function NewListingPage() {
               {isPending ? 'Oluşturuluyor…' : 'İlan Oluştur'}
             </Button>
             <Button type="button" variant="secondary" onClick={() => router.back()} className="flex-1">
+              <X className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
               İptal
             </Button>
           </div>

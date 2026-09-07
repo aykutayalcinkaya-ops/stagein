@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { AnimatePresence, motion } from 'motion/react';
-import { X } from 'lucide-react';
+import { Send, X } from 'lucide-react';
 import { Button } from '@/components/ui';
 
 interface ListingApplicationModalProps {
@@ -91,7 +91,7 @@ export function ListingApplicationModal({
                       placeholder="Neden bu ilana başvurmak istediğinizi kısaca anlatın..."
                       rows={4}
                       required
-                      className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-text transition-colors duration-150 placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
 
@@ -103,7 +103,7 @@ export function ListingApplicationModal({
                       <select
                         value={videoId}
                         onChange={(e) => setVideoId(e.target.value)}
-                        className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-text focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-text transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-primary"
                       >
                         <option value="">Video seçme</option>
                         {videos.map((video) => (
@@ -119,7 +119,14 @@ export function ListingApplicationModal({
 
                   <div className="flex gap-2 pt-2">
                     <Button type="submit" variant="primary" className="flex-1" disabled={isSubmitting}>
-                      {isSubmitting ? 'Gönderiliyor…' : 'Başvuru Gönder'}
+                      {isSubmitting ? (
+                        'Gönderiliyor…'
+                      ) : (
+                        <>
+                          <Send className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+                          Başvuru Gönder
+                        </>
+                      )}
                     </Button>
                     <Dialog.Close asChild>
                       <Button type="button" variant="secondary" className="flex-1">

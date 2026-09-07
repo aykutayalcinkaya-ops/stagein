@@ -90,7 +90,7 @@ export function Card({ className, children }: { className?: string; children: Re
   return (
     <div
       className={cn(
-        'rounded-2xl border border-border bg-card/80 p-5 backdrop-blur-sm transition-colors duration-180 hover:border-border-strong',
+        'relative rounded-2xl border border-border bg-card/80 p-5 shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_16px_32px_-20px_rgba(0,0,0,0.6)] backdrop-blur-sm transition-colors duration-180 hover:border-border-strong',
         className
       )}
     >

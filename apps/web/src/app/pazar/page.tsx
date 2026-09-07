@@ -35,10 +35,16 @@ export default async function PazarPage({ searchParams }: PageProps) {
     <div className="mx-auto max-w-6xl px-4 py-16">
       <header className="mb-10 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-4xl font-black tracking-tight sm:text-5xl">Pazar</h1>
-          <p className="mt-4 max-w-2xl text-lg text-text-secondary">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.25em] text-accent">İkinci El</p>
+          <h1 className="font-display text-4xl uppercase leading-[0.95] tracking-tight sm:text-5xl">Pazar</h1>
+          <p className="mt-4 max-w-2xl text-lg leading-relaxed text-text-secondary">
             Müzisyenden müzisyene ikinci el enstrüman, amfi ve ekipman. Aracı yok, komisyon yok.
           </p>
+          {items.length > 0 ? (
+            <p className="mt-3 text-sm text-text-secondary">
+              {items.length} ilan{city ? ` · ${city}` : ''}
+            </p>
+          ) : null}
         </div>
 
         <Suspense fallback={<div className="h-12 w-44 rounded-lg border border-border bg-card" />}>

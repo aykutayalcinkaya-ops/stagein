@@ -2,14 +2,22 @@
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback } from 'react'
+import { GraduationCap, LayoutGrid, Mic2, Search, Users, X } from 'lucide-react'
 import { CITIES, GENRES, INSTRUMENTS } from '@stagein/shared'
 import { LISTING_TYPE_LABELS } from '@/lib/site'
+import { FilterDropdown } from './FilterDropdown'
 import { cn } from './ui'
 
 const TYPES = ['band', 'session', 'lesson'] as const
 
-const selectClass =
-  'w-full rounded-lg border border-border bg-card px-4 py-3 text-sm text-white outline-none transition-colors duration-150 focus:border-primary'
+const TYPE_ICONS: Record<(typeof TYPES)[number], typeof Users> = {
+  band: Users,
+  session: Mic2,
+  lesson: GraduationCap,
+}
+
+const pillClass =
+  'inline-flex min-h-11 items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-dark'
 
 export function ListingFilters() {
   const router = useRouter()
@@ -36,72 +44,85 @@ export function ListingFilters() {
           type="button"
           onClick={() => setParam('type', '')}
           className={cn(
-            'rounded-full border px-4 py-2 text-sm font-medium transition-colors duration-150',
+            pillClass,
             active('type') === '' ? 'border-primary bg-primary text-white' : 'border-border text-text-secondary hover:text-white'
           )}
         >
+          <LayoutGrid className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
           Tümü
         </button>
-        {TYPES.map((type) => (
-          <button
-            key={type}
-            type="button"
-            onClick={() => setParam('type', type)}
-            className={cn(
-              'rounded-full border px-4 py-2 text-sm font-medium transition-colors duration-150',
-              active('type') === type ? 'border-primary bg-primary text-white' : 'border-border text-text-secondary hover:text-white'
-            )}
-          >
-            {LISTING_TYPE_LABELS[type]}
-          </button>
-        ))}
+        {TYPES.map((type) => {
+          const Icon = TYPE_ICONS[type]
+          return (
+            <button
+              key={type}
+              type="button"
+              onClick={() => setParam('type', type)}
+              className={cn(
+                pillClass,
+                active('type') === type ? 'border-primary bg-primary text-white' : 'border-border text-text-secondary hover:text-white'
+              )}
+            >
+              <Icon className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+              {LISTING_TYPE_LABELS[type]}
+            </button>
+          )
+        })}
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <input
-          type="search"
-          placeholder="İlan ara"
-          defaultValue={active('q')}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') setParam('q', (e.target as HTMLInputElement).value.trim())
-          }}
-          className="w-full rounded-lg border border-border bg-card px-4 py-3 text-sm text-white outline-none transition-colors duration-150 placeholder:text-muted focus:border-primary"
+        <div className="relative">
+          <Search
+            className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
+            strokeWidth={2}
+            aria-hidden="true"
+          />
+          <input
+            type="search"
+            placeholder="İlan ara"
+            defaultValue={active('q')}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') setParam('q', (e.target as HTMLInputElement).value.trim())
+            }}
+            className="w-full rounded-lg border border-border bg-card py-3 pl-10 pr-4 text-sm text-white outline-none transition-colors duration-150 placeholder:text-muted focus:border-primary"
+          />
+        </div>
+
+        <FilterDropdown
+          label="Şehir"
+          options={[...CITIES]}
+          selected={active('city') ? [active('city')] : []}
+          onChange={(next) => setParam('city', next[0] ?? '')}
+          multiple={false}
+          className="w-full justify-between"
         />
 
-        <select value={active('city')} onChange={(e) => setParam('city', e.target.value)} className={selectClass}>
-          <option value="">Tüm şehirler</option>
-          {CITIES.map((city) => (
-            <option key={city} value={city}>
-              {city}
-            </option>
-          ))}
-        </select>
+        <FilterDropdown
+          label="Enstrüman"
+          options={[...INSTRUMENTS]}
+          selected={active('instrument') ? [active('instrument')] : []}
+          onChange={(next) => setParam('instrument', next[0] ?? '')}
+          multiple={false}
+          className="w-full justify-between"
+        />
 
-        <select value={active('instrument')} onChange={(e) => setParam('instrument', e.target.value)} className={selectClass}>
-          <option value="">Tüm enstrümanlar</option>
-          {INSTRUMENTS.map((i) => (
-            <option key={i} value={i}>
-              {i}
-            </option>
-          ))}
-        </select>
-
-        <select value={active('genre')} onChange={(e) => setParam('genre', e.target.value)} className={selectClass}>
-          <option value="">Tüm tarzlar</option>
-          {GENRES.map((g) => (
-            <option key={g} value={g}>
-              {g}
-            </option>
-          ))}
-        </select>
+        <FilterDropdown
+          label="Tarz"
+          options={[...GENRES]}
+          selected={active('genre') ? [active('genre')] : []}
+          onChange={(next) => setParam('genre', next[0] ?? '')}
+          multiple={false}
+          className="w-full justify-between"
+        />
       </div>
 
       {hasFilters ? (
         <button
           type="button"
           onClick={() => router.push(pathname)}
-          className="self-start text-sm text-muted underline underline-offset-4 hover:text-white"
+          className="inline-flex min-h-11 w-fit items-center gap-1.5 self-start rounded-full px-2 text-sm text-muted transition-colors duration-150 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-dark"
         >
+          <X className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
           Filtreleri temizle
         </button>
       ) : null}
