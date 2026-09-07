@@ -1,8 +1,8 @@
 import { Metadata } from 'next';
-import { motion } from 'motion/react';
 import { FREELANCE_CATEGORIES } from '@stagein/shared';
 import { GigCard } from '@/components/freelance/GigCard';
 import { EmptyState, LinkButton } from '@/components/ui';
+import { FadeInSection } from '@/components/FadeInSection';
 import { getFreelanceGigs } from '@/lib/data';
 
 export const metadata: Metadata = {
@@ -16,12 +16,7 @@ export default async function FreelancePage() {
   return (
     <div className="min-h-screen bg-dark">
       {/* Hero Section */}
-      <motion.section
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-        className="px-4 py-12"
-      >
+      <FadeInSection className="px-4 py-12">
         <div className="mx-auto max-w-6xl">
           <h1 className="mb-4 text-4xl font-bold text-text md:text-5xl">
             Profesyonel Müzik Hizmetleri Pazaryeri
@@ -30,7 +25,7 @@ export default async function FreelancePage() {
             Müzisyenler, prodüktörler, ses mühendisleri tarafından sunulan kaliteli hizmetleri keşfedin.
           </p>
         </div>
-      </motion.section>
+      </FadeInSection>
 
       {/* Categories Section */}
       <section className="border-t border-border bg-card/40 px-4 py-12">

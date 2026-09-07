@@ -3,10 +3,13 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { motion } from 'motion/react'
+import { cn } from '@/lib/cn'
 
-export function cn(...classes: Array<string | false | null | undefined>) {
-  return classes.filter(Boolean).join(' ')
-}
+// cn artık lib/cn.ts'de yaşıyor çünkü bu dosya 'use client' — server component'ler
+// (ör. UserAvatar.tsx) plain fonksiyon olarak cn() çağıramaz, sadece JSX olarak
+// buradaki bileşenleri render edebilirler. Mevcut client import'ları bozmamak
+// için burada yeniden export ediliyor.
+export { cn }
 
 const buttonBase =
   'inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-full px-6 py-3 font-semibold tracking-tight transition-all duration-180 ease-out disabled:pointer-events-none disabled:opacity-50'

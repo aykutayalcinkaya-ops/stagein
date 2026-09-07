@@ -116,11 +116,24 @@ export function MarketplaceDetailContent({ itemId }: { itemId: string }) {
                 <Button
                   variant="primary"
                   className="w-full"
-                  onClick={() => setIsOfferModalOpen(true)}
-                  disabled={!userId || userId === item.seller_id}
+                  onClick={() => {
+                    if (!userId) {
+                      router.push('/giris');
+                      return;
+                    }
+                    setIsOfferModalOpen(true);
+                  }}
+                  disabled={userId === item.seller_id}
                 >
                   Teklif Ver
                 </Button>
+                {!userId ? (
+                  <p className="mt-2 text-center text-xs text-muted">
+                    Teklif verebilmek için giriş yapmalısın.
+                  </p>
+                ) : userId === item.seller_id ? (
+                  <p className="mt-2 text-center text-xs text-muted">Kendi ilanına teklif veremezsin.</p>
+                ) : null}
               </div>
 
               <p className="text-center text-xs text-muted">
