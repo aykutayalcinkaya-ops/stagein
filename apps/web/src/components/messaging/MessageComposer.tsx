@@ -1,0 +1,44 @@
+'use client'
+
+import { useState, type KeyboardEvent } from 'react'
+import { Send } from 'lucide-react'
+
+export function MessageComposer({ onSend, isSending }: { onSend: (content: string) => void; isSending: boolean }) {
+  const [value, setValue] = useState('')
+
+  function submit() {
+    const trimmed = value.trim()
+    if (!trimmed || isSending) return
+    onSend(trimmed)
+    setValue('')
+  }
+
+  function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      submit()
+    }
+  }
+
+  return (
+    <div className="flex items-end gap-2 border-t border-border p-3 sm:p-4">
+      <textarea
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder="Mesaj yaz…"
+        rows={1}
+        className="max-h-32 flex-1 resize-none rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-text outline-none transition-colors duration-150 placeholder:text-muted focus:border-primary"
+      />
+      <button
+        type="button"
+        onClick={submit}
+        disabled={!value.trim() || isSending}
+        aria-label="Gönder"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-white transition-colors duration-150 hover:bg-primary-dim disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        <Send className="h-5 w-5" strokeWidth={1.8} />
+      </button>
+    </div>
+  )
+}

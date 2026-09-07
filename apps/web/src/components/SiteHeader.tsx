@@ -3,7 +3,9 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
+import { MessageCircle } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
+import { useUnreadConversationCount } from '@/hooks/useMessaging'
 import { UserAvatar } from './UserAvatar'
 import { cn } from './ui'
 
@@ -19,6 +21,7 @@ export function SiteHeader() {
   const userId = useAuthStore((s) => s.userId)
   const profile = useAuthStore((s) => s.profile)
   const [open, setOpen] = useState(false)
+  const unreadCount = useUnreadConversationCount()
 
   /** Keşfet tam ekran/immersive akış — kendi üst çubuğunu taşıyor. */
   if (pathname.startsWith('/kesfet')) return null
@@ -54,6 +57,18 @@ export function SiteHeader() {
         <div className="hidden items-center gap-3 md:flex">
           {profile ? (
             <>
+              <Link
+                href="/mesajlar"
+                aria-label="Mesajlar"
+                className="relative flex h-9 w-9 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.03] text-text-secondary hover:text-white"
+              >
+                <MessageCircle className="h-4 w-4" strokeWidth={1.8} />
+                {unreadCount > 0 ? (
+                  <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-dark">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                ) : null}
+              </Link>
               <Link href={`/profil/${profile.username}`} aria-label="Profilim">
                 <UserAvatar name={profile.full_name} username={profile.username} url={profile.avatar_url} size={36} />
               </Link>
@@ -100,6 +115,18 @@ export function SiteHeader() {
                 </Link>
               </li>
             ))}
+            {userId ? (
+              <li>
+                <Link href="/mesajlar" onClick={() => setOpen(false)} className="flex items-center gap-2 text-base font-medium text-text-secondary">
+                  Mesajlar
+                  {unreadCount > 0 ? (
+                    <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-[11px] font-bold text-dark">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  ) : null}
+                </Link>
+              </li>
+            ) : null}
             <li>
               <Link href={userId ? '/kesfet' : '/giris'} onClick={() => setOpen(false)} className="text-base font-semibold text-primary">
                 {userId ? 'Uygulamaya Git' : 'Giriş Yap'}

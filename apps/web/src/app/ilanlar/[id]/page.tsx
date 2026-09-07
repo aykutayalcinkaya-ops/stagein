@@ -12,9 +12,10 @@ import {
   MapPin,
   TrendingUp,
 } from 'lucide-react'
-import { Card, Chip, LinkButton } from '@/components/ui'
+import { Card, Chip } from '@/components/ui'
 import { FadeInSection } from '@/components/FadeInSection'
 import { UserAvatar } from '@/components/UserAvatar'
+import { StartConversationButton } from '@/components/messaging/StartConversationButton'
 import { getListing } from '@/lib/data'
 import { EXPERIENCE_LABELS, LISTING_TYPE_LABELS, SITE_URL, formatDate, formatRelative } from '@/lib/site'
 
@@ -205,11 +206,8 @@ export default async function IlanDetayPage({ params }: PageProps) {
               </div>
             </div>
 
-            <LinkButton href="/#indir">Uygulamadan mesaj at</LinkButton>
+            <StartConversationButton otherUserId={listing.user_id} label="Mesaj At" />
           </div>
-          <p className="mt-4 text-xs text-muted">
-            Mesajlaşma uygulama üzerinden yürür. İlan sahibine yazmak için StageIn uygulamasını indir.
-          </p>
         </Card>
       </FadeInSection>
     </article>

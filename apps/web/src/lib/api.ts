@@ -1,6 +1,7 @@
 'use client'
 
 import type {
+  Conversation,
   ExperienceLevel,
   FreelanceGig,
   FreelanceOrder,
@@ -11,6 +12,7 @@ import type {
   ListingApplication,
   MarketplaceItem,
   MarketplaceOffer,
+  Message,
   MusicianProfile,
   Post,
   PostComment,
@@ -751,4 +753,147 @@ export async function deleteOwnAccount(): Promise<void> {
   const { error } = await supabase.rpc('delete_user_account')
   if (error) throw error
   await supabase.auth.signOut()
+}
+
+// ---------------------------------------------------------------------------
+// Mesajlaşma (bkz. docs/superpowers/plans/2026-09-07-web-mesajlasma-plani.md)
+// ---------------------------------------------------------------------------
+
+const CONVERSATION_SELECT = `id, participant_ids, last_message_at`
+
+export async function getOrCreateConversation(
+  currentUserId: string,
+  otherUserId: string
+): Promise<Conversation> {
+  const supabase = createClient()
+
+  const { data: existing, error: findError } = await supabase
+    .from('conversations')
+    .select(CONVERSATION_SELECT)
+    .contains('participant_ids', [currentUserId, otherUserId])
+    .limit(1)
+  if (findError) throw findError
+  if (existing && existing.length > 0) return existing[0] as Conversation
+
+  const { data, error: insertError } = await supabase
+    .from('conversations')
+    .insert({ participant_ids: [currentUserId, otherUserId] })
+    .select(CONVERSATION_SELECT)
+    .single()
+  if (insertError) throw insertError
+  return data as Conversation
+}
+
+export async function listConversations(userId: string): Promise<Conversation[]> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('conversations')
+    .select(CONVERSATION_SELECT)
+    .contains('participant_ids', [userId])
+    .order('last_message_at', { ascending: false })
+  if (error) throw error
+
+  const conversations = (data ?? []) as Conversation[]
+  if (conversations.length === 0) return []
+
+  // Her katılımcının kullanıcı bilgisini ve her konuşmanın son mesajını ayrı
+  // sorgularla çekip client-side eşleştiriyoruz — participant_ids bir array
+  // olduğundan PostgREST'in tek sorguda ilişkisel join'i burada çalışmaz.
+  const otherUserIds = Array.from(
+    new Set(conversations.map((c) => c.participant_ids.find((id) => id !== userId)).filter((id): id is string => !!id))
+  )
+  const conversationIds = conversations.map((c) => c.id)
+
+  const [{ data: users }, { data: lastMessages }, { data: reads }] = await Promise.all([
+    otherUserIds.length > 0
+      ? supabase.from('users').select(USER_SELECT).in('id', otherUserIds)
+      : Promise.resolve({ data: [] as User[] }),
+    supabase
+      .from('messages')
+      .select('id, conversation_id, sender_id, content, audio_url, context_type, context_id, created_at')
+      .in('conversation_id', conversationIds)
+      .order('created_at', { ascending: false }),
+    supabase.from('conversation_reads').select('conversation_id, last_read_at').eq('user_id', userId).in('conversation_id', conversationIds),
+  ])
+
+  const usersById = new Map((users ?? []).map((u) => [u.id, u as User]))
+  const lastMessageByConversation = new Map<string, Message>()
+  for (const m of (lastMessages ?? []) as Message[]) {
+    if (!lastMessageByConversation.has(m.conversation_id)) lastMessageByConversation.set(m.conversation_id, m)
+  }
+  const readAtByConversation = new Map((reads ?? []).map((r) => [r.conversation_id as string, r.last_read_at as string]))
+
+  return conversations.map((c) => {
+    const otherId = c.participant_ids.find((id) => id !== userId)
+    const lastMessage = lastMessageByConversation.get(c.id)
+    const readAt = readAtByConversation.get(c.id)
+    return {
+      ...c,
+      participants: otherId && usersById.has(otherId) ? [usersById.get(otherId)!] : [],
+      last_message: lastMessage,
+      unread: !!lastMessage && lastMessage.sender_id !== userId && (!readAt || new Date(lastMessage.created_at) > new Date(readAt)),
+    } as Conversation & { unread: boolean }
+  })
+}
+
+export async function getConversation(conversationId: string, userId: string): Promise<Conversation | null> {
+  const supabase = createClient()
+  const { data, error } = await supabase.from('conversations').select(CONVERSATION_SELECT).eq('id', conversationId).maybeSingle()
+  if (error) throw error
+  if (!data) return null
+  const conversation = data as Conversation
+  const otherId = conversation.participant_ids.find((id) => id !== userId)
+  if (!otherId) return conversation
+  const { data: other } = await supabase.from('users').select(USER_SELECT).eq('id', otherId).maybeSingle()
+  return { ...conversation, participants: other ? [other as User] : [] }
+}
+
+export async function listMessages(conversationId: string, before?: string): Promise<Message[]> {
+  const supabase = createClient()
+  let query = supabase
+    .from('messages')
+    .select('id, conversation_id, sender_id, content, audio_url, context_type, context_id, created_at')
+    .eq('conversation_id', conversationId)
+    .order('created_at', { ascending: false })
+    .limit(30)
+  if (before) query = query.lt('created_at', before)
+  const { data, error } = await query
+  if (error) throw error
+  return ((data ?? []) as Message[]).reverse()
+}
+
+export async function sendMessage(input: {
+  conversationId: string
+  senderId: string
+  content: string
+  contextType?: 'video' | 'listing' | 'direct'
+  contextId?: string
+}): Promise<Message> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('messages')
+    .insert({
+      conversation_id: input.conversationId,
+      sender_id: input.senderId,
+      content: input.content,
+      context_type: input.contextType ?? 'direct',
+      context_id: input.contextId ?? null,
+    })
+    .select('id, conversation_id, sender_id, content, audio_url, context_type, context_id, created_at')
+    .single()
+  if (error) throw error
+  await touchConversation(input.conversationId)
+  return data as Message
+}
+
+export async function touchConversation(conversationId: string): Promise<void> {
+  const supabase = createClient()
+  await supabase.from('conversations').update({ last_message_at: new Date().toISOString() }).eq('id', conversationId)
+}
+
+export async function markConversationRead(conversationId: string, userId: string): Promise<void> {
+  const supabase = createClient()
+  await supabase
+    .from('conversation_reads')
+    .upsert({ conversation_id: conversationId, user_id: userId, last_read_at: new Date().toISOString() })
 }

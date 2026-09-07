@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { motion } from 'motion/react'
-import { Disc3, Heart, Music2, Send, Volume2, VolumeX } from 'lucide-react'
+import { Disc3, Heart, Music2, Volume2, VolumeX } from 'lucide-react'
 import type { ReactionType, Video } from '@stagein/shared'
 import { useVideoToggleReaction } from '@/hooks/usePostReactions'
 import { useToggleVideoShare } from '@/hooks/usePostShares'
@@ -16,6 +16,7 @@ import { extractYoutubeVideoId } from '@/lib/youtube'
 import { UserAvatar } from './UserAvatar'
 import { ReactionPicker } from './ReactionPicker'
 import { ShareMenu } from './ShareMenu'
+import { StartConversationButton } from './messaging/StartConversationButton'
 import { cn } from './ui'
 
 function IconButton({
@@ -295,13 +296,7 @@ export function FeedVideo({ video }: { video: Video }) {
             />
           </div>
 
-          {author ? (
-            <IconButton label="Mesaj at">
-              <Link href={`/profil/${author.username}`} className="flex h-full w-full items-center justify-center" aria-label="Mesaj at">
-                <Send className="h-5 w-5" strokeWidth={1.8} />
-              </Link>
-            </IconButton>
-          ) : null}
+          {author ? <StartConversationButton otherUserId={author.id} variant="icon" label="Mesaj At" /> : null}
 
           <IconButton onClick={toggleMuted} label={muted ? 'Sesi aç' : 'Sesi kapat'}>
             {muted ? <VolumeX className="h-5 w-5" strokeWidth={1.8} /> : <Volume2 className="h-5 w-5" strokeWidth={1.8} />}

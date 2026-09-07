@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { Chip, LinkButton } from '@/components/ui'
+import { Chip } from '@/components/ui'
 import { UserAvatar } from '@/components/UserAvatar'
+import { StartConversationButton } from '@/components/messaging/StartConversationButton'
 import { getStudio } from '@/lib/data'
 import { SITE_URL } from '@/lib/site'
 
@@ -64,7 +65,7 @@ export default async function StudyoPage({ params }: PageProps) {
           </div>
         </div>
 
-        <LinkButton href="/#indir">İletişime geç</LinkButton>
+        <StartConversationButton otherUserId={studio.id} label="İletişime Geç" />
       </header>
 
       {studio.bio ? <p className="mt-8 max-w-2xl text-lg leading-relaxed text-text-secondary">{studio.bio}</p> : null}
@@ -72,8 +73,8 @@ export default async function StudyoPage({ params }: PageProps) {
       <section className="mt-12 rounded-xl border border-border bg-card p-6">
         <h2 className="text-2xl font-bold tracking-tight">Rezervasyon</h2>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-text-secondary">
-          Online saatlik rezervasyon ve ödeme, StageIn Faz 2 kapsamında açılıyor. Şimdilik stüdyoya uygulama üzerinden
-          mesaj atarak müsait saatleri sorabilirsin.
+          Online saatlik rezervasyon ve ödeme, StageIn Faz 2 kapsamında açılıyor. Şimdilik stüdyoya doğrudan mesaj
+          atarak müsait saatleri sorabilirsin.
         </p>
 
         <div className="mt-6 grid gap-3 sm:grid-cols-3">

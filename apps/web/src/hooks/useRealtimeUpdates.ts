@@ -176,6 +176,39 @@ export function useVideoFeedRealtime() {
 }
 
 /**
+ * Bir konuşmadaki yeni mesajları ve gelen kutusu listesini (son mesaj/sıra)
+ * canlı günceller. `conversationId` verilirse yalnızca o konuşmaya postgres
+ * `filter` ile abone olunur (açık konuşma ekranı); her durumda gelen kutusu
+ * (['conversations']) da geçersiz kılınır — `messages` tablosunda `user_id`
+ * değil `sender_id`/`conversation_id` olduğundan `isValidChangePayload`/
+ * `isFromSelf` burada kullanılamıyor, kendi hafif doğrulaması var.
+ */
+export function useMessagingRealtime(conversationId?: string) {
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) return
+
+    const supabase = createClient()
+
+    const unsubscribe = subscribeWithRetry(supabase, () => {
+      const channel = supabase.channel(conversationId ? `messages-${conversationId}` : 'messages-inbox')
+      const filter = conversationId
+        ? { event: 'INSERT' as const, schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` }
+        : { event: 'INSERT' as const, schema: 'public', table: 'messages' }
+      return channel.on('postgres_changes', filter, (payload: ChangePayload) => {
+        const record = payload.new as Record<string, unknown> | undefined
+        if (!record?.id || !record?.conversation_id) return
+        if (conversationId) invalidate(queryClient, ['messages', conversationId])
+        invalidate(queryClient, ['conversations'])
+      })
+    })
+
+    return unsubscribe
+  }, [queryClient, conversationId])
+}
+
+/**
  * MANUAL TESTING CHECKLIST (Phase 9):
  *
  * Reactions Realtime:
