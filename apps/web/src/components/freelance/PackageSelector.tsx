@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { Truck, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui';
 
 interface Package {
   id: string;
@@ -37,18 +39,19 @@ export function PackageSelector({ packages, onSelect, onContactSeller }: Package
   const selectedPkg = packages.find((p) => p.id === selected);
 
   return (
-    <div className="sticky top-6 bg-white border border-gray-200 rounded-lg p-6 shadow-lg">
-      <h3 className="text-lg font-bold mb-4">Paket Seç</h3>
+    <div className="sticky top-6 rounded-lg border border-border bg-card p-6 shadow-2xl">
+      <h3 className="mb-4 text-lg font-bold text-text">Paket Seç</h3>
 
-      <div className="flex gap-2 mb-6">
+      <div className="mb-6 flex gap-2">
         {packages.map((pkg) => (
           <button
             key={pkg.id}
+            type="button"
             onClick={() => handleSelect(pkg.id)}
-            className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition ${
+            className={`min-h-11 flex-1 rounded-lg px-3 py-2 text-sm font-medium transition ${
               selected === pkg.id
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                ? 'bg-primary text-white'
+                : 'bg-surface text-text-secondary hover:bg-white/[0.08]'
             }`}
           >
             {tierLabels[pkg.tier]}
@@ -59,22 +62,28 @@ export function PackageSelector({ packages, onSelect, onContactSeller }: Package
       {selectedPkg && (
         <div className="space-y-4">
           <div>
-            <h4 className="font-bold text-lg mb-2">{selectedPkg.title}</h4>
-            <p className="text-sm text-gray-600 mb-4">{selectedPkg.description}</p>
+            <h4 className="mb-2 text-lg font-bold text-text">{selectedPkg.title}</h4>
+            <p className="mb-4 text-sm text-text-secondary">{selectedPkg.description}</p>
           </div>
 
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <div className="text-3xl font-bold text-gray-900 mb-2">
+          <div className="rounded-lg bg-surface p-4">
+            <div className="mb-2 text-3xl font-bold text-text">
               {selectedPkg.price.toLocaleString('tr-TR')}₺
             </div>
-            <div className="text-sm text-gray-600 space-y-1">
-              <p>📦 Teslimat: {selectedPkg.deliveryDays} gün</p>
-              <p>🔄 Revizyon: {selectedPkg.revisionsCount === 999 ? 'Sınırsız' : selectedPkg.revisionsCount}</p>
+            <div className="space-y-1 text-sm text-text-secondary">
+              <p className="flex items-center gap-2">
+                <Truck className="h-4 w-4 text-muted" strokeWidth={1.8} aria-hidden="true" />
+                Teslimat: {selectedPkg.deliveryDays} gün
+              </p>
+              <p className="flex items-center gap-2">
+                <RefreshCw className="h-4 w-4 text-muted" strokeWidth={1.8} aria-hidden="true" />
+                Revizyon: {selectedPkg.revisionsCount === 999 ? 'Sınırsız' : selectedPkg.revisionsCount}
+              </p>
             </div>
           </div>
 
           <div className="space-y-2">
-            <h5 className="font-semibold text-sm">Dahil Olan Özellikler:</h5>
+            <h5 className="text-sm font-semibold text-text">Dahil Olan Özellikler:</h5>
             {Object.entries(selectedPkg.features).map(([key, value]) => (
               <label key={key} className="flex items-center gap-2 text-sm">
                 <input
@@ -83,24 +92,18 @@ export function PackageSelector({ packages, onSelect, onContactSeller }: Package
                   disabled
                   className="rounded"
                 />
-                <span className="text-gray-700 capitalize">{key.replace(/_/g, ' ')}</span>
+                <span className="capitalize text-text-secondary">{key.replace(/_/g, ' ')}</span>
               </label>
             ))}
           </div>
 
           <div className="grid grid-cols-2 gap-2 pt-4">
-            <button
-              onClick={() => onSelect(selectedPkg)}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition"
-            >
+            <Button variant="primary" onClick={() => onSelect(selectedPkg)}>
               Sipariş Ver
-            </button>
-            <button
-              onClick={onContactSeller}
-              className="border-2 border-blue-600 text-blue-600 hover:bg-blue-50 font-bold py-2 px-4 rounded-lg transition"
-            >
+            </Button>
+            <Button variant="secondary" onClick={onContactSeller}>
               Soru Sor
-            </button>
+            </Button>
           </div>
         </div>
       )}

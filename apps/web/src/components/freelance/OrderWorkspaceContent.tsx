@@ -1,7 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { motion } from 'motion/react';
+import { Package, SearchX } from 'lucide-react';
 import { FREELANCE_ORDER_STATUS_LABELS } from '@stagein/shared';
+import { Button } from '@/components/ui';
+import { CardSkeleton, useTimeout } from '@/components/Skeleton';
+import { EmptyState } from '@/components/EmptyState';
+import { formatDateTr } from '@/lib/format';
 import {
   useCompleteOrder,
   useFreelanceOrder,
@@ -10,80 +17,120 @@ import {
 } from '@/hooks/useFreelance';
 import { useAuthStore } from '@/stores/authStore';
 
+const textareaClass =
+  'w-full rounded-lg border border-border bg-surface px-4 py-2 text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary';
+
 export function OrderWorkspaceContent({ orderId }: { orderId: string }) {
+  const router = useRouter();
   const userId = useAuthStore((s) => s.userId);
-  const { data: order, isLoading, error } = useFreelanceOrder(orderId);
+  const { data: order, isLoading, error, refetch } = useFreelanceOrder(orderId);
   const { mutateAsync: submitRequirements, isPending: isSubmittingRequirements } =
     useSubmitOrderRequirements(orderId);
   const { mutateAsync: requestRevision, isPending: isRequestingRevision } = useRequestOrderRevision(orderId);
   const { mutateAsync: completeOrder, isPending: isCompleting } = useCompleteOrder(orderId);
+  const timedOut = useTimeout(9000, isLoading);
 
   const [requirements, setRequirements] = useState('');
   const [note, setNote] = useState('');
 
-  if (isLoading) {
-    return <div className="min-h-screen bg-gray-50 py-12 px-4 text-center text-gray-500">Yükleniyor…</div>;
+  if (isLoading && !timedOut) {
+    return (
+      <div className="min-h-screen bg-dark px-4 py-12">
+        <div className="mx-auto max-w-6xl space-y-6">
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading && timedOut) {
+    return (
+      <div className="min-h-screen bg-dark px-4 py-16">
+        <EmptyState
+          icon={SearchX}
+          title="Yükleme çok uzun sürdü"
+          description="Bağlantı yavaş olabilir ya da bir şeyler ters gitti. Tekrar dene."
+          action={{ label: 'Tekrar Dene', onClick: () => refetch() }}
+          className="mx-auto max-w-lg"
+        />
+      </div>
+    );
   }
 
   if (error || !order) {
-    return <div className="min-h-screen bg-gray-50 py-12 px-4 text-center text-gray-600">Sipariş bulunamadı.</div>;
+    return (
+      <div className="min-h-screen bg-dark px-4 py-16">
+        <EmptyState
+          icon={SearchX}
+          title="Sipariş bulunamadı"
+          description="Bu sipariş kaldırılmış olabilir ya da erişim yetkin yok. Siparişlerine profilinden ulaşabilirsin."
+          action={{ label: 'Freelance Sayfasına Dön', onClick: () => router.push('/freelance') }}
+          className="mx-auto max-w-lg"
+        />
+      </div>
+    );
   }
 
   const isBuyer = userId === order.buyer_id;
   const status = order.status;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Sipariş Çalışma Alanı</h1>
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      className="min-h-screen bg-dark px-4 py-12"
+    >
+      <div className="mx-auto max-w-6xl">
+        <h1 className="mb-8 text-3xl font-bold text-text">Sipariş Çalışma Alanı</h1>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="space-y-8 lg:col-span-2">
             {/* Order Info */}
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Sipariş Bilgileri</h2>
-              <div className="space-y-3 text-gray-700">
+            <div className="rounded-lg border border-border bg-card p-6">
+              <h2 className="mb-4 text-2xl font-bold text-text">Sipariş Bilgileri</h2>
+              <div className="space-y-3 text-text-secondary">
                 <p>
-                  <span className="font-semibold">Hizmet:</span> {order.gig?.title ?? '—'}
+                  <span className="font-semibold text-text">Hizmet:</span> {order.gig?.title ?? '—'}
                 </p>
                 <p>
-                  <span className="font-semibold">Paket:</span> {order.package?.title ?? '—'}
+                  <span className="font-semibold text-text">Paket:</span> {order.package?.title ?? '—'}
                 </p>
                 <p>
-                  <span className="font-semibold">Fiyat:</span> ₺{order.price.toLocaleString('tr-TR')}
+                  <span className="font-semibold text-text">Fiyat:</span> ₺{order.price.toLocaleString('tr-TR')}
                 </p>
                 <p>
-                  <span className="font-semibold">Alıcı:</span>{' '}
+                  <span className="font-semibold text-text">Alıcı:</span>{' '}
                   {order.buyer?.full_name ?? order.buyer?.username ?? '—'}
                 </p>
                 <p>
-                  <span className="font-semibold">Satıcı:</span>{' '}
+                  <span className="font-semibold text-text">Satıcı:</span>{' '}
                   {order.seller?.full_name ?? order.seller?.username ?? '—'}
                 </p>
                 {order.delivered_at ? (
                   <p>
-                    <span className="font-semibold">Teslimat Tarihi:</span>{' '}
-                    {new Date(order.delivered_at).toLocaleDateString('tr-TR')}
+                    <span className="font-semibold text-text">Teslimat Tarihi:</span> {formatDateTr(order.delivered_at)}
                   </p>
                 ) : null}
                 {order.auto_complete_at ? (
                   <p>
-                    <span className="font-semibold">Otomatik Onay Tarihi:</span>{' '}
-                    {new Date(order.auto_complete_at).toLocaleDateString('tr-TR')}
+                    <span className="font-semibold text-text">Otomatik Onay Tarihi:</span>{' '}
+                    {formatDateTr(order.auto_complete_at)}
                   </p>
                 ) : null}
               </div>
             </div>
 
             {/* Status Timeline */}
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Durum</h2>
+            <div className="rounded-lg border border-border bg-card p-6">
+              <h2 className="mb-6 text-2xl font-bold text-text">Durum</h2>
               <div className="space-y-4">
                 {Object.entries(FREELANCE_ORDER_STATUS_LABELS).map(([key, label]) => (
                   <div key={key} className="flex items-center gap-3">
-                    <div className={`w-4 h-4 rounded-full ${status === key ? 'bg-blue-600' : 'bg-gray-300'}`} />
-                    <span className={status === key ? 'font-bold text-blue-600' : 'text-gray-600'}>{label}</span>
+                    <div className={`h-4 w-4 rounded-full ${status === key ? 'bg-primary' : 'bg-white/10'}`} />
+                    <span className={status === key ? 'font-bold text-primary' : 'text-text-secondary'}>{label}</span>
                   </div>
                 ))}
               </div>
@@ -91,9 +138,9 @@ export function OrderWorkspaceContent({ orderId }: { orderId: string }) {
 
             {/* Requirements Section */}
             {status === 'requirements_pending' && isBuyer && (
-              <div className="bg-white rounded-lg p-6 border border-gray-200">
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">Gereksinimlerinizi Giriniz</h2>
-                <p className="text-gray-600 mb-4">
+              <div className="rounded-lg border border-border bg-card p-6">
+                <h2 className="mb-4 text-2xl font-bold text-text">Gereksinimlerinizi Giriniz</h2>
+                <p className="mb-4 text-text-secondary">
                   Müzisyene hangi dosyaları göndereceğinizi ve ne yapılması gerektiğini anlatın.
                 </p>
                 <textarea
@@ -101,31 +148,31 @@ export function OrderWorkspaceContent({ orderId }: { orderId: string }) {
                   onChange={(e) => setRequirements(e.target.value)}
                   placeholder="Örn: RAW vokal dosyalarını ve arkaplan müziğini WAV formatında göndereceğim..."
                   rows={6}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`${textareaClass} mb-4`}
                 />
-                <button
+                <Button
+                  variant="primary"
                   onClick={() => submitRequirements(requirements)}
                   disabled={isSubmittingRequirements || !requirements.trim()}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold py-2 px-6 rounded-lg transition"
                 >
                   {isSubmittingRequirements ? 'Gönderiliyor…' : 'Gereksinimler Gönder'}
-                </button>
+                </Button>
               </div>
             )}
 
             {/* In Progress Section */}
             {status === 'in_progress' && (
-              <div className="bg-white rounded-lg p-6 border border-gray-200">
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">İşlem Devam Ediyor</h2>
-                <p className="text-gray-600">
+              <div className="rounded-lg border border-border bg-card p-6">
+                <h2 className="mb-4 text-2xl font-bold text-text">İşlem Devam Ediyor</h2>
+                <p className="text-text-secondary">
                   {isBuyer
                     ? 'Müzisyen siparişiniz üzerinde çalışıyor. Teslimat yapıldığında burada bildirim alacaksınız.'
                     : 'Alıcının gereksinimleri gönderildi. İşi tamamladığınızda teslim edebilirsiniz.'}
                 </p>
                 {order.requirements_submitted ? (
-                  <div className="mt-4 bg-gray-50 p-4 rounded-lg">
-                    <p className="text-sm font-semibold text-gray-700 mb-1">Gönderilen Gereksinimler</p>
-                    <p className="text-gray-700 whitespace-pre-line">{order.requirements_submitted}</p>
+                  <div className="mt-4 rounded-lg bg-surface p-4">
+                    <p className="mb-1 text-sm font-semibold text-text-secondary">Gönderilen Gereksinimler</p>
+                    <p className="whitespace-pre-line text-text-secondary">{order.requirements_submitted}</p>
                   </div>
                 ) : null}
               </div>
@@ -133,17 +180,18 @@ export function OrderWorkspaceContent({ orderId }: { orderId: string }) {
 
             {/* Delivery Section */}
             {status === 'delivered' && isBuyer && (
-              <div className="bg-white rounded-lg p-6 border border-gray-200">
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">Teslim Edilen Dosyalar</h2>
-                <div className="bg-gray-50 p-4 rounded-lg mb-4 space-y-1">
+              <div className="rounded-lg border border-border bg-card p-6">
+                <h2 className="mb-4 text-2xl font-bold text-text">Teslim Edilen Dosyalar</h2>
+                <div className="mb-4 space-y-1 rounded-lg bg-surface p-4">
                   {order.delivered_files.length > 0 ? (
                     order.delivered_files.map((f) => (
-                      <p key={f.url} className="text-gray-700">
-                        📦 {f.name}
+                      <p key={f.url} className="flex items-center gap-2 text-text-secondary">
+                        <Package className="h-4 w-4 shrink-0 text-muted" strokeWidth={1.8} aria-hidden="true" />
+                        {f.name}
                       </p>
                     ))
                   ) : (
-                    <p className="text-gray-500 text-sm">Dosya bulunamadı.</p>
+                    <p className="text-sm text-text-secondary">Dosya bulunamadı.</p>
                   )}
                 </div>
                 <div className="space-y-2">
@@ -152,23 +200,25 @@ export function OrderWorkspaceContent({ orderId }: { orderId: string }) {
                     onChange={(e) => setNote(e.target.value)}
                     placeholder="Dosya hakkında notunuz (isteğe bağlı)"
                     rows={3}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={textareaClass}
                   />
                   <div className="flex gap-2">
-                    <button
+                    <Button
+                      variant="primary"
+                      className="flex-1"
                       onClick={() => completeOrder()}
                       disabled={isCompleting}
-                      className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-bold py-2 px-4 rounded-lg transition"
                     >
                       {isCompleting ? 'İşleniyor…' : 'Onayla & Tamamla'}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      className="flex-1"
                       onClick={() => requestRevision(note || null)}
                       disabled={isRequestingRevision}
-                      className="flex-1 border-2 border-orange-600 text-orange-600 hover:bg-orange-50 disabled:opacity-50 font-bold py-2 px-4 rounded-lg transition"
                     >
                       {isRequestingRevision ? 'İşleniyor…' : 'Revizyon İste'}
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -176,26 +226,26 @@ export function OrderWorkspaceContent({ orderId }: { orderId: string }) {
           </div>
 
           {/* Sidebar */}
-          <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Mevcut Durum</h3>
-              <div className="bg-green-50 p-4 rounded-lg">
-                <p className="font-bold text-green-900">{FREELANCE_ORDER_STATUS_LABELS[status]}</p>
+          <div className="space-y-6 lg:col-span-1">
+            <div className="rounded-lg border border-border bg-card p-6">
+              <h3 className="mb-4 text-lg font-bold text-text">Mevcut Durum</h3>
+              <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4">
+                <p className="font-bold text-emerald-300">{FREELANCE_ORDER_STATUS_LABELS[status]}</p>
               </div>
             </div>
 
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Yardım</h3>
-              <p className="text-sm text-gray-600 mb-3">
+            <div className="rounded-lg border border-border bg-card p-6">
+              <h3 className="mb-4 text-lg font-bold text-text">Yardım</h3>
+              <p className="mb-3 text-sm text-text-secondary">
                 Herhangi bir sorun yaşıyorsanız, desteğimize başvurun.
               </p>
-              <button className="w-full border-2 border-gray-300 text-gray-700 hover:bg-gray-50 font-bold py-2 px-4 rounded-lg transition">
+              <Button variant="secondary" className="w-full" onClick={() => router.push('/iletisim')}>
                 Destek Al
-              </button>
+              </Button>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

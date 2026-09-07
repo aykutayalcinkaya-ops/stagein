@@ -7,7 +7,6 @@ import { isSupabaseConfigured } from '@/lib/supabase/env'
 import {
   createVideoFromFile,
   createYoutubeVideo,
-  toggleVideoLike,
   type CreateYoutubeVideoInput,
   type VideoMetadataInput,
 } from '@/lib/api'
@@ -82,33 +81,6 @@ export function useVideoFeed(city?: string, startVideoId?: string) {
     },
     getNextPageParam: (lastPage, allPages) =>
       lastPage.length < PAGE_SIZE ? undefined : allPages.reduce((sum, p) => sum + p.length, 0),
-  })
-}
-
-export function useToggleVideoLike() {
-  const queryClient = useQueryClient()
-  const userId = useAuthStore((s) => s.userId)
-
-  return useMutation({
-    mutationFn: async ({ videoId, like }: { videoId: string; like: boolean }) => {
-      if (!userId) throw new Error('Login required')
-      await toggleVideoLike(videoId, userId, like)
-    },
-    onMutate: async ({ videoId, like }) => {
-      queryClient.setQueryData<{ pages: Video[][]; pageParams: number[] }>(['feed'], (current) => {
-        if (!current) return current
-        return {
-          ...current,
-          pages: current.pages.map((page) =>
-            page.map((v) =>
-              v.id === videoId
-                ? { ...v, liked_by_me: like }
-                : v
-            )
-          ),
-        }
-      })
-    },
   })
 }
 

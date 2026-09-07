@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import { Star } from 'lucide-react';
+import { UserAvatar } from '@/components/UserAvatar';
 
 interface GigCardProps {
   id: string;
@@ -34,9 +36,9 @@ export function GigCard({
 
   return (
     <Link href={href}>
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
+      <div className="cursor-pointer overflow-hidden rounded-lg border border-border bg-card transition-shadow hover:shadow-2xl">
         {coverImage && (
-          <div className="relative w-full h-48 bg-gray-200">
+          <div className="relative h-48 w-full bg-surface">
             <Image
               src={coverImage}
               alt={title}
@@ -46,37 +48,31 @@ export function GigCard({
           </div>
         )}
 
-        <div className="p-4 space-y-3">
-          <h3 className="font-bold text-gray-900 line-clamp-2">{title}</h3>
+        <div className="space-y-3 p-4">
+          <h3 className="line-clamp-2 font-bold text-text">{title}</h3>
 
-          <p className="text-sm text-gray-600 line-clamp-2">{description}</p>
+          <p className="line-clamp-2 text-sm text-text-secondary">{description}</p>
 
           <div className="flex items-center gap-2">
-            {sellerAvatar && (
-              <img
-                src={sellerAvatar}
-                alt={sellerName}
-                className="w-8 h-8 rounded-full object-cover"
-              />
-            )}
-            <span className="text-sm text-gray-700">{sellerName}</span>
+            <UserAvatar name={sellerName} url={sellerAvatar} size={32} />
+            <span className="text-sm text-text-secondary">{sellerName}</span>
           </div>
 
-          <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+          <div className="flex items-center justify-between border-t border-border pt-2">
             <div className="flex items-center gap-1">
-              <span className="text-yellow-400">★</span>
-              <span className="text-sm font-medium text-gray-900">
+              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" strokeWidth={1.8} aria-hidden="true" />
+              <span className="text-sm font-medium text-text">
                 {rating.toFixed(1)}
               </span>
-              <span className="text-xs text-gray-500">({ratingCount})</span>
+              <span className="text-xs text-muted">({ratingCount})</span>
             </div>
 
             <div className="text-right">
-              <div className="text-lg font-bold text-blue-600">
+              <div className="text-lg font-bold text-primary">
                 ₺{minPrice.toLocaleString('tr-TR')}
               </div>
               {orderQueueCount > 0 && (
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted">
                   {orderQueueCount} siparişin sırası
                 </p>
               )}

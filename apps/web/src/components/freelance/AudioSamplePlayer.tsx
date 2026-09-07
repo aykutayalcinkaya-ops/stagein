@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { Play, Pause } from 'lucide-react';
 
 interface AudioSample {
   title: string;
@@ -26,23 +27,29 @@ export function AudioSamplePlayer({ samples }: { samples: AudioSample[] }) {
   };
 
   if (!samples || samples.length === 0) {
-    return <div className="text-gray-500">Ses örneği bulunmamaktadır.</div>;
+    return <div className="text-text-secondary">Ses örneği bulunmamaktadır.</div>;
   }
 
   return (
     <div className="space-y-4">
       {samples.map((sample, idx) => (
-        <div key={idx} className="p-4 bg-gray-50 rounded-lg">
+        <div key={idx} className="rounded-lg bg-surface p-4">
           <div className="flex items-center gap-3">
             <button
+              type="button"
               onClick={() => togglePlay(`sample-${idx}`, sample.url)}
-              className="flex-shrink-0 w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center"
+              aria-label={playing === `sample-${idx}` ? 'Duraklat' : 'Oynat'}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-white transition-colors hover:bg-primary-dim"
             >
-              {playing === `sample-${idx}` ? '⏸' : '▶'}
+              {playing === `sample-${idx}` ? (
+                <Pause className="h-5 w-5" strokeWidth={1.8} fill="currentColor" />
+              ) : (
+                <Play className="h-5 w-5" strokeWidth={1.8} fill="currentColor" />
+              )}
             </button>
             <div className="flex-1">
-              <h4 className="font-medium text-gray-900">{sample.title}</h4>
-              <p className="text-sm text-gray-500">{formatDuration(sample.duration)}</p>
+              <h4 className="font-medium text-text">{sample.title}</h4>
+              <p className="text-sm text-muted">{formatDuration(sample.duration)}</p>
             </div>
           </div>
           <audio
