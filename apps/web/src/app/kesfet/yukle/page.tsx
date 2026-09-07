@@ -62,10 +62,6 @@ export default function VideoYuklePage() {
   const { mutateAsync: uploadYoutubeVideo, isPending: isSubmittingYoutube } = useCreateYoutubeVideo()
   const isSubmitting = isUploading || isSubmittingYoutube
 
-  function toggle(list: string[], setList: (next: string[]) => void, value: string) {
-    setList(list.includes(value) ? list.filter((v) => v !== value) : [...list, value])
-  }
-
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     const selected = e.target.files?.[0] ?? null
     setFileError(null)
